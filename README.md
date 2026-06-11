@@ -21,6 +21,9 @@ anywhere static (GitHub Pages, Netlify, etc.). Geolocation ("📍") requires HTT
 
 ## Using it
 
+First open runs a short guided tour that spotlights each control (re-run it any time
+from ☰ → *Take the tour*).
+
 1. **Find the property** — search box or 📍 to use device GPS (handy in the field).
 2. **Set weather** — drag the compass needle (points the direction the wind is FROM),
    set speed with the slider. Change it mid-scenario to force tactics changes.

@@ -1002,6 +1002,145 @@ $('#helpBtn').addEventListener('click', () => {
   closePanels();
 });
 
+/* ------------------------------ guided tour ----------------------------- */
+
+const TOUR_STEPS = [
+  { center: true, title: '👋 Welcome to FireOps Trainer',
+    text: 'Set up a live wildland scenario in about a minute. This quick tour points out where everything lives — nothing burns until you say so.',
+    cta: 'Start tour' },
+  { sel: '#searchBox', title: '1 · Find the property',
+    text: 'Type an address or landmark here and press Enter to fly the map there.' },
+  { sel: '#locateBtn', title: '2 · …or use your GPS',
+    text: 'Out on the training ground? Tap 📍 and the map jumps to where you’re standing.' },
+  { sel: '.wind-group', title: '3 · Set the wind',
+    text: 'Drag the compass needle — it points the direction the wind is coming FROM. The slider sets speed. Change either mid-burn and the fire reacts.' },
+  { sel: '[data-tool="ignite"]', title: '4 · Light the fire',
+    text: 'Tap Ignite, then tap or drag on the map to set fire. The ⭕ button changes brush size.' },
+  { sel: '.sim-controls', title: '5 · Run the scenario',
+    text: '▶ starts and pauses. Tap 1× to fast-forward up to 8×. Elapsed time and acres burned show here, and Reset fire reruns the same problem.' },
+  { sel: '[data-tool="unit:engine"]', title: '6 · Assign resources',
+    text: 'Tap a unit type, then tap the map to place it. Drag units to move them. Tap one to rename it, set it Working (it knocks down fire nearby), or remove it.' },
+  { sel: '[data-tool="line"]', title: '7 · Go defensive',
+    text: 'Fire line paints a fuel break by hand. The 🚜 dozer cuts line as you drag it, and the ✈️ tanker drops retardant.' },
+  { sel: '#menuBtn', title: '8 · Scenarios & more',
+    text: 'Save and share scenarios, paint fuels, see the legend — or run this tour again any time.',
+    cta: 'Finish' },
+];
+
+const tour = { i: -1, layer: null, spot: null, card: null };
+
+function startTour() {
+  if (tour.layer) endTour();
+  closePanels();
+  $('#helpOverlay').hidden = true;
+  setTool('pan');
+
+  const layer = document.createElement('div');
+  layer.id = 'tourLayer';
+  const spot = document.createElement('div');
+  spot.className = 'tour-spotlight hidden-spot';
+  const card = document.createElement('div');
+  card.className = 'tour-card';
+  layer.append(spot, card);
+  document.body.appendChild(layer);
+  Object.assign(tour, { i: -1, layer, spot, card });
+
+  window.addEventListener('resize', tourReposition);
+  showTourStep(0);
+}
+
+function endTour() {
+  if (!tour.layer) return;
+  window.removeEventListener('resize', tourReposition);
+  tour.layer.remove();
+  Object.assign(tour, { i: -1, layer: null, spot: null, card: null });
+  localStorage.setItem('fireops_tour_done', '1');
+}
+
+function showTourStep(n) {
+  tour.i = n;
+  const step = TOUR_STEPS[n];
+  const card = tour.card;
+
+  card.innerHTML = '';
+  const h = document.createElement('h3');
+  h.textContent = step.title;
+  const p = document.createElement('p');
+  p.textContent = step.text;
+  const row = document.createElement('div');
+  row.className = 'tour-row';
+
+  const dots = document.createElement('div');
+  dots.className = 'tour-dots';
+  dots.textContent = `${n + 1} / ${TOUR_STEPS.length}`;
+
+  const mkBtn = (label, cls, fn) => {
+    const b = document.createElement('button');
+    b.className = 'tour-btn' + (cls ? ' ' + cls : '');
+    b.textContent = label;
+    b.addEventListener('click', fn);
+    return b;
+  };
+
+  if (n > 0) row.appendChild(mkBtn('‹', 'ghost', () => showTourStep(n - 1)));
+  row.appendChild(dots);
+  if (n < TOUR_STEPS.length - 1) {
+    row.appendChild(mkBtn('Skip', 'ghost', endTour));
+    row.appendChild(mkBtn(step.cta || 'Next', 'primary', () => showTourStep(n + 1)));
+  } else {
+    row.appendChild(mkBtn(step.cta || 'Done', 'primary', endTour));
+  }
+  card.append(h, p, row);
+
+  // bring the target on-screen first (top/bottom bars scroll on phones)
+  const target = step.sel ? document.querySelector(step.sel) : null;
+  if (target) target.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+  setTimeout(tourReposition, target ? 330 : 0);
+}
+
+function tourReposition() {
+  if (!tour.layer || tour.i < 0) return;
+  const step = TOUR_STEPS[tour.i];
+  const { spot, card } = tour;
+  const vw = window.innerWidth, vh = window.innerHeight;
+  const cw = Math.min(340, vw - 20);
+
+  const target = step.sel ? document.querySelector(step.sel) : null;
+  if (!target || step.center) {
+    spot.classList.add('hidden-spot');
+    spot.style.boxShadow = 'none';
+    card.style.left = (vw - cw) / 2 + 'px';
+    card.style.top = Math.max(14, vh / 2 - card.offsetHeight / 2 - 40) + 'px';
+    tour.layer.style.background = 'rgba(6, 9, 13, .66)';
+    return;
+  }
+  tour.layer.style.background = 'transparent';
+  spot.classList.remove('hidden-spot');
+  spot.style.boxShadow = '';
+
+  const pad = 6;
+  const r = target.getBoundingClientRect();
+  const top = Math.max(2, r.top - pad);
+  const left = Math.max(2, r.left - pad);
+  const w = Math.min(r.width + pad * 2, vw - left - 2);
+  const hgt = r.height + pad * 2;
+  spot.style.top = top + 'px';
+  spot.style.left = left + 'px';
+  spot.style.width = w + 'px';
+  spot.style.height = hgt + 'px';
+
+  // card above or below the spotlight, whichever has room
+  const ch = card.offsetHeight || 170;
+  let cy = (top + hgt + 14 + ch < vh - 10) ? top + hgt + 14 : top - ch - 14;
+  cy = clamp(cy, 10, vh - ch - 10);
+  let cx = clamp(r.left + r.width / 2 - cw / 2, 10, vw - cw - 10);
+  card.style.top = cy + 'px';
+  card.style.left = cx + 'px';
+}
+
+$('#tourBtn').addEventListener('click', () => { closePanels(); startTour(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') endTour(); });
+
 /* --------------------------- search & locate ---------------------------- */
 
 $('#searchBox').addEventListener('keydown', (e) => {
@@ -1051,8 +1190,5 @@ if (navigator.geolocation) {
 }
 
 setTimeout(() => {
-  if (!localStorage.getItem('fireops_seen_help')) {
-    $('#helpOverlay').hidden = false;
-    localStorage.setItem('fireops_seen_help', '1');
-  }
-}, 600);
+  if (!localStorage.getItem('fireops_tour_done')) startTour();
+}, 700);
