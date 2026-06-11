@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>FireOps Trainer — Wildland Scenario Sandbox</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- ======== TOP BAR ======== -->
+  <header id="topbar">
+    <div class="brand" title="FireOps Trainer">🔥<span class="brand-name">FireOps&nbsp;Trainer</span></div>
+
+    <div class="bar-group sim-controls">
+      <button id="playBtn" class="btn primary" title="Start / pause simulation">▶</button>
+      <button id="speedBtn" class="btn" title="Simulation speed">1×</button>
+      <div class="readout" title="Elapsed scenario time"><span id="clock">0:00:00</span></div>
+      <div class="readout" title="Area burned"><span id="acres">0.0</span> ac</div>
+      <button id="resetFireBtn" class="btn warn" title="Remove all fire (keeps units and lines)">Reset&nbsp;fire</button>
+    </div>
+
+    <div class="bar-group wind-group" title="Drag the compass to set wind direction (direction wind is FROM)">
+      <svg id="compass" viewBox="0 0 100 100" width="56" height="56">
+        <circle cx="50" cy="50" r="46" class="compass-face"/>
+        <text x="50" y="16" class="compass-letter">N</text>
+        <text x="50" y="93" class="compass-letter">S</text>
+        <text x="9"  y="55" class="compass-letter">W</text>
+        <text x="91" y="55" class="compass-letter">E</text>
+        <g id="needle">
+          <polygon points="50,12 44,58 56,58" class="needle-head"/>
+          <polygon points="44,58 56,58 50,80" class="needle-tail"/>
+        </g>
+        <circle cx="50" cy="50" r="5" class="compass-hub"/>
+      </svg>
+      <div class="wind-text">
+        <div id="windLabel">Wind 270° W</div>
+        <input type="range" id="windSpeed" min="0" max="40" step="1" value="10">
+        <div id="windSpeedLabel">10 mph</div>
+      </div>
+    </div>
+
+    <div class="bar-group nav-group">
+      <input id="searchBox" type="search" placeholder="Search address / place…" autocomplete="off">
+      <button id="locateBtn" class="btn" title="Go to my location">📍</button>
+      <button id="menuBtn" class="btn" title="Menu">☰</button>
+    </div>
+  </header>
+
+  <!-- ======== MAP ======== -->
+  <div id="map"></div>
+
+  <!-- status toast -->
+  <div id="toast" hidden></div>
+
+  <!-- ======== BOTTOM TOOLBAR ======== -->
+  <footer id="toolbar">
+    <div class="tool-strip">
+      <div class="group">
+        <button class="tool active" data-tool="pan" title="Pan / select">✋<span>Pan</span></button>
+        <button class="tool" data-tool="ignite" title="Tap/drag to set fire">🔥<span>Ignite</span></button>
+        <button class="tool" data-tool="extinguish" title="Erase fire">🧯<span>Erase fire</span></button>
+        <button class="tool" data-tool="line" title="Draw fire line / dozer line (fuel break)">🚧<span>Fire line</span></button>
+        <button class="tool" data-tool="fuel" title="Paint fuel type">🌿<span>Fuel</span></button>
+        <select id="fuelSelect" title="Fuel type to paint">
+          <option value="grass">Grass</option>
+          <option value="brush">Brush</option>
+          <option value="timber">Timber</option>
+          <option value="water">Water/Bare</option>
+          <option value="clear">Clear paint</option>
+        </select>
+        <button id="brushBtn" class="tool" title="Brush size">⭕<span id="brushLabel">Med</span></button>
+      </div>
+
+      <div class="sep"></div>
+
+      <div class="group" id="unitPalette">
+        <!-- populated by app.js -->
+      </div>
+    </div>
+  </footer>
+
+  <!-- ======== MENU PANEL ======== -->
+  <div id="menuPanel" class="panel" hidden>
+    <div class="panel-head"><b>Menu</b><button class="btn close-btn" data-close="#menuPanel">✕</button></div>
+    <button class="menu-item" id="saveBtn">💾 Save scenario</button>
+    <button class="menu-item" id="loadBtn">📂 Load scenario…</button>
+    <button class="menu-item" id="exportBtn">⬇️ Export scenario file</button>
+    <button class="menu-item" id="importBtn">⬆️ Import scenario file</button>
+    <hr>
+    <label class="menu-item row"><span>🏷 Map labels</span><input type="checkbox" id="labelsChk" checked></label>
+    <label class="menu-item row"><span>💨 Smoke</span><input type="checkbox" id="smokeChk" checked></label>
+    <label class="menu-item row"><span>📐 Cell size</span>
+      <select id="cellSizeSel"><option value="5">5 m (fine)</option><option value="10" selected>10 m</option><option value="20">20 m (large area)</option></select>
+    </label>
+    <hr>
+    <button class="menu-item" id="clearUnitsBtn">🗑 Remove all units</button>
+    <button class="menu-item" id="clearAllBtn">♻️ Clear everything</button>
+    <hr>
+    <button class="menu-item" id="helpBtn">❓ Help / legend</button>
+  </div>
+
+  <!-- ======== LOAD PANEL ======== -->
+  <div id="loadPanel" class="panel" hidden>
+    <div class="panel-head"><b>Saved scenarios</b><button class="btn close-btn" data-close="#loadPanel">✕</button></div>
+    <div id="scenarioList"></div>
+  </div>
+
+  <!-- ======== HELP ======== -->
+  <div id="helpOverlay" class="overlay" hidden>
+    <div class="help-card">
+      <div class="panel-head"><b>FireOps Trainer — quick guide</b><button class="btn close-btn" data-close="#helpOverlay">✕</button></div>
+      <div class="help-body">
+        <p><b>Set up:</b> Search or 📍 locate to fly to the training property. Set wind by dragging the compass needle (needle points where wind is FROM) and the speed slider.</p>
+        <p><b>Start fire:</b> Pick 🔥 <i>Ignite</i> and tap/drag on the map, then press ▶. Fire spreads with the wind; change wind mid-scenario to test crews' reactions.</p>
+        <p><b>Resources:</b> Tap a unit in the bottom bar, then tap the map to place it. Drag units to move them. Tap a unit for options — toggle <b>Working</b> and units knock down fire within their circle. Drag the 🚜 dozer to cut line as it moves. ✈️ tanker has a <b>Drop retardant</b> button.</p>
+        <p><b>Tools:</b> 🚧 paints fire line (fuel break), 🌿 paints fuel types, 🧯 erases fire, ⭕ cycles brush size.</p>
+        <table class="legend">
+          <tr><td><span class="sw" style="background:#ffae34"></span></td><td>Active fire (brighter = hotter)</td></tr>
+          <tr><td><span class="sw" style="background:#262019"></span></td><td>Burned (black)</td></tr>
+          <tr><td><span class="sw" style="background:#d2b48c"></span></td><td>Fire line / dozer line</td></tr>
+          <tr><td><span class="sw" style="background:#ff7bcb"></span></td><td>Retardant</td></tr>
+          <tr><td><span class="sw" style="background:#5db1ff"></span></td><td>Wet / knocked down</td></tr>
+          <tr><td><span class="sw" style="background:#3a5f2a"></span></td><td>Brush · <span class="sw" style="background:#1d4023"></span> Timber · <span class="sw" style="background:#3573b9"></span> Water/bare</td></tr>
+        </table>
+        <p class="fine">Spread model is a simplified wind-driven cellular model for training discussion — not a predictive fire-behavior tool.</p>
+      </div>
+    </div>
+  </div>
+
+  <input type="file" id="importFile" accept=".json,application/json" hidden>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
