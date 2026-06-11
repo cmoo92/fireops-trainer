@@ -1,5 +1,7 @@
 # FireOps Trainer
 
+**Live app:** https://cmoo92.github.io/fireops-trainer/ — open it on any phone/tablet/laptop.
+
 A touch-friendly web sandbox for fire department training scenarios: satellite imagery,
 wind-driven wildland fire spread, drifting smoke, and placeable apparatus/personnel.
 
