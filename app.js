@@ -12,11 +12,12 @@ const STEP_MS = 300;              // wall-clock ms between sim steps
 const SPEEDS = [1, 2, 4, 8];
 
 const FUELS = ['grass', 'brush', 'timber'];
-const BASE_P = { grass: 0.40, brush: 0.28, timber: 0.20 };  // base ignition prob
+const R0 = { grass: 0.09, brush: 0.045, timber: 0.025 };  // calm rate of spread, m/s
 const BURN_TICKS = { grass: 4, brush: 9, timber: 18 };
-const WIND_K = 0.30;              // upwind damping per mph
-const WIND_FLOOR = 0.05;          // residual upwind/flank creep
-const HEAD_BOOST = 0.05;          // headfire boost per mph
+const WIND_K = 0.30;              // upwind/flank damping per mph
+const WIND_FLOOR = 0.15;          // residual upwind/flank creep
+const HEAD_GAIN = 0.5;            // head ROS gain per mph (10 mph -> 6x calm)
+const P_SUB_MAX = 0.85;           // per-substep ignition probability cap
 const MAX_CELLS = 400000;         // runaway-fire safety stop (~10k ac @ 10 m)
 const WET_TTL = 90;               // ticks a "wet" cell stays damp
 const WET_FACTOR = 0.12;
@@ -346,42 +347,53 @@ function tick() {
   simTime += TICK_SECONDS;
   const ws = clamp(windSpeed, 0, 40);
   const toRad = ((windFromDeg + 180) % 360) * Math.PI / 180;
-  const ignitions = [];
+  const DIAG = Math.SQRT2;
 
-  for (const k of burning) {
-    const c = cells.get(k);
-    c.t--;
-    if (c.t <= 0) { c.s = 2; burning.delete(k); continue; }
+  // High winds advance more than one cell per tick: split the tick into
+  // substeps so the head fire's rate of spread is honored, not prob-capped.
+  const maxRos = R0.grass * (1 + HEAD_GAIN * ws);
+  const subs = Math.max(1, Math.ceil(maxRos * TICK_SECONDS / (CELL * P_SUB_MAX)));
 
-    const [i, j] = parseKey(k);
-    for (const [di, dj] of NEIGH) {
-      const nk = key(i + di, j + dj);
-      if (cells.has(nk)) continue;
-      const m = mods.get(nk);
-      let fuel = 'grass', mult = 1;
-      if (m) {
-        if (m.f === 'break' || m.f === 'water') continue;
-        if (m.f === 'ret') mult = RET_FACTOR;
-        else if (m.f) fuel = m.f;
+  for (let step = 0; step < subs; step++) {
+    const ignitions = [];
+    for (const k of burning) {
+      const [i, j] = parseKey(k);
+      for (const [di, dj] of NEIGH) {
+        const nk = key(i + di, j + dj);
+        if (cells.has(nk)) continue;
+        const m = mods.get(nk);
+        let fuel = 'grass', mult = 1;
+        if (m) {
+          if (m.f === 'break' || m.f === 'water') continue;
+          if (m.f === 'ret') mult = RET_FACTOR;
+          else if (m.f) fuel = m.f;
+        }
+        if (wet.has(nk)) mult *= WET_FACTOR;
+
+        const dist = (di !== 0 && dj !== 0) ? CELL * DIAG : CELL;
+        const bearing = Math.atan2(di, dj);              // from north, cw
+        const align = Math.cos(bearing - toRad);          // 1 = downwind
+        const ros = R0[fuel]                               // m/s toward neighbor
+          * (WIND_FLOOR + (1 - WIND_FLOOR) * Math.exp(WIND_K * ws * (align - 1)))
+          * (1 + HEAD_GAIN * ws * Math.pow(Math.max(0, align), 1.5))
+          * mult;
+        const p = Math.min(ros * TICK_SECONDS / (subs * dist), P_SUB_MAX);
+        if (Math.random() < p) ignitions.push([nk, fuel]);
       }
-      if (wet.has(nk)) mult *= WET_FACTOR;
-
-      const bearing = Math.atan2(di, dj);              // from north, cw
-      const align = Math.cos(bearing - toRad);          // 1 = downwind
-      let p = BASE_P[fuel]
-        * (WIND_FLOOR + (1 - WIND_FLOOR) * Math.exp(WIND_K * ws * (align - 1)))
-        * (1 + HEAD_BOOST * ws * Math.pow(Math.max(0, align), 1.5))
-        * mult;
-      if (di !== 0 && dj !== 0) p *= 0.55;
-      if (Math.random() < Math.min(p, 0.95)) ignitions.push([nk, fuel]);
+    }
+    for (const [nk, fuel] of ignitions) {
+      if (cells.has(nk)) continue;
+      const dur = BURN_TICKS[fuel] + ((Math.random() * 3) | 0);
+      cells.set(nk, { s: 1, t: dur, t0: dur });
+      burning.add(nk);
     }
   }
 
-  for (const [nk, fuel] of ignitions) {
-    if (cells.has(nk)) continue;
-    const dur = BURN_TICKS[fuel] + ((Math.random() * 3) | 0);
-    cells.set(nk, { s: 1, t: dur, t0: dur });
-    burning.add(nk);
+  // burn-down
+  for (const k of burning) {
+    const c = cells.get(k);
+    c.t--;
+    if (c.t <= 0) { c.s = 2; burning.delete(k); }
   }
 
   // unit suppression
