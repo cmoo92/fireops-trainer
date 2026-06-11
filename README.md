@@ -9,6 +9,26 @@ wind-driven wildland fire spread, drifting smoke, and placeable apparatus/person
 > discussion ("the fire is now at the fence line — what's your move?"). It is **not**
 > a predictive fire-behavior tool.
 
+## Fire model calibration
+
+The wind slider is treated as 10-m open wind. Measured model behavior on flat,
+continuous cured grass:
+
+| Wind | Head fire | % of wind | Fire shape (L/W) |
+|------|-----------|-----------|-------------------|
+| calm | ~0.5 m/min creep | — | round |
+| 10 mph | ~2.0 mph | ~20% | ~2.5 |
+| 25 mph | ~4.5 mph | ~18% | ~3.5 |
+| 40 mph | ~7 mph | ~18% | ~5 |
+
+Anchors: the CSIRO "head fire ≈ 20% of 10-m wind" rule of thumb for cured grass
+(Cheney & Sullivan), Anderson (1983) elliptical length-to-width ratios as used by
+FARSITE/FlamMap, Rothermel grass fuel models, and typical backing rates
+(~0.5–2 m/min, nearly wind-independent). Brush spreads at roughly half grass speed
+(wind-dominated, chaparral-like); timber models a sheltered surface fire that barely
+feels wind. Not modeled: slope, spotting, fuel moisture/curing, diurnal change —
+which is why it stays a discussion driver, not a prediction.
+
 ## Run it
 
 No build step. Either:

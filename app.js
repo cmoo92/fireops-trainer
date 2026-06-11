@@ -11,12 +11,22 @@ const TICK_SECONDS = 10;          // simulated seconds per tick
 const STEP_MS = 300;              // wall-clock ms between sim steps
 const SPEEDS = [1, 2, 4, 8];
 
+/* Spread calibration (slider wind = 10-m open wind, mph):
+   - grass head ROS ~15% of wind — between Rothermel FM1/FM3 (~10-13%)
+     and the CSIRO cured-grass 20% rule of thumb
+   - ellipse L/W ~3 at 10 mph, ~6-7 at 25 mph — tracks Anderson (1983)
+     as used by FARSITE/FlamMap (capped at 8)
+   - backing fire ~0.5 m/min, nearly wind-independent
+   - timber feels little wind (sheltered surface fire), brush is
+     wind-dominated like chaparral */
 const FUELS = ['grass', 'brush', 'timber'];
-const R0 = { grass: 0.09, brush: 0.045, timber: 0.025 };  // calm rate of spread, m/s
+const R0 = { grass: 0.06, brush: 0.03, timber: 0.02 };    // calm rate of spread, m/s
+const WIND_GAIN = { grass: 1.0, brush: 1.0, timber: 0.2 };// wind sensitivity per fuel
 const BURN_TICKS = { grass: 4, brush: 9, timber: 18 };
-const WIND_K = 0.30;              // upwind/flank damping per mph
+const WIND_K = 0.40;              // upwind/flank damping per mph
 const WIND_FLOOR = 0.15;          // residual upwind/flank creep
-const HEAD_GAIN = 0.5;            // head ROS gain per mph (10 mph -> 6x calm)
+const HEAD_GAIN = 0.8;            // head ROS gain on ws^WIND_EXP
+const WIND_EXP = 1.1;             // mildly superlinear wind response
 const P_SUB_MAX = 0.85;           // per-substep ignition probability cap
 const MAX_CELLS = 400000;         // runaway-fire safety stop (~10k ac @ 10 m)
 const WET_TTL = 90;               // ticks a "wet" cell stays damp
@@ -351,7 +361,9 @@ function tick() {
 
   // High winds advance more than one cell per tick: split the tick into
   // substeps so the head fire's rate of spread is honored, not prob-capped.
-  const maxRos = R0.grass * (1 + HEAD_GAIN * ws);
+  const wsPow = Math.pow(ws, WIND_EXP);
+  const lobe = 2 + ws / 12;       // higher wind -> narrower head lobe (skinnier ellipse)
+  const maxRos = R0.grass * (1 + HEAD_GAIN * wsPow);
   const subs = Math.max(1, Math.ceil(maxRos * TICK_SECONDS / (CELL * P_SUB_MAX)));
 
   for (let step = 0; step < subs; step++) {
@@ -375,7 +387,7 @@ function tick() {
         const align = Math.cos(bearing - toRad);          // 1 = downwind
         const ros = R0[fuel]                               // m/s toward neighbor
           * (WIND_FLOOR + (1 - WIND_FLOOR) * Math.exp(WIND_K * ws * (align - 1)))
-          * (1 + HEAD_GAIN * ws * Math.pow(Math.max(0, align), 1.5))
+          * (1 + HEAD_GAIN * WIND_GAIN[fuel] * wsPow * Math.pow(Math.max(0, align), lobe))
           * mult;
         const p = Math.min(ros * TICK_SECONDS / (subs * dist), P_SUB_MAX);
         if (Math.random() < p) ignitions.push([nk, fuel]);
