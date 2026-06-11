@@ -73,10 +73,15 @@
           <option value="water">Water/Bare</option>
           <option value="clear">Clear paint</option>
         </select>
+        <button class="tool" data-tool="hose" title="Drag to draw a hose lay — shows length and friction loss">🪢<span>Hose</span></button>
         <button id="brushBtn" class="tool" title="Brush size">⭕<span id="brushLabel">Med</span></button>
       </div>
 
       <div class="sep"></div>
+
+      <div class="pal-tabs" id="palTabs">
+        <!-- Wildland / Structure / EMS tabs populated by app.js -->
+      </div>
 
       <div class="group" id="unitPalette">
         <!-- populated by app.js -->
@@ -119,7 +124,8 @@
         <p><b>Set up:</b> Search or 📍 locate to fly to the training property. Set wind by dragging the compass needle (needle points where wind is FROM) and the speed slider.</p>
         <p><b>Start fire:</b> Pick 🔥 <i>Ignite</i> and tap/drag on the map, then press ▶. Fire spreads with the wind; change wind mid-scenario to test crews' reactions.</p>
         <p><b>Resources:</b> Tap a unit in the bottom bar, then tap the map to place it. Drag units to move them. Tap a unit for options — toggle <b>Working</b> and units knock down fire within their circle. Drag the 🚜 dozer to cut line as it moves. ✈️ tanker has a <b>Drop retardant</b> button.</p>
-        <p><b>Tools:</b> 🚧 paints fire line (fuel break), 🌿 paints fuel types, 🧯 erases fire, ⭕ cycles brush size.</p>
+        <p><b>Tools:</b> 🚧 paints fire line (fuel break), 🌿 paints fuel types, 🧯 erases fire, ⭕ cycles brush size. 🪢 <i>Hose</i>: drag along the route — the lay shows length in feet; tap it to set diameter &amp; GPM for friction loss.</p>
+        <p><b>Structure &amp; EMS:</b> Unit tabs switch between Wildland, Structure and EMS kits. A 🏠🔥 <i>Str.&nbsp;fire</i> progresses smoke&nbsp;showing → working → fully involved on the scenario clock unless Working units close by knock it down; fully involved buildings throw embers downwind, and a wildland fire reaching an 🏠 <i>Exposure</i> sets it alight. 🚰 hydrants, 🛢️ drop tanks, 🚩 staging, LZ and 🤕 patients all take notes (tap any unit) for scripting calls.</p>
         <table class="legend">
           <tr><td><span class="sw" style="background:#ffae34"></span></td><td>Active fire (brighter = hotter)</td></tr>
           <tr><td><span class="sw" style="background:#262019"></span></td><td>Burned (black)</td></tr>
@@ -127,6 +133,7 @@
           <tr><td><span class="sw" style="background:#ff7bcb"></span></td><td>Retardant</td></tr>
           <tr><td><span class="sw" style="background:#5db1ff"></span></td><td>Wet / knocked down</td></tr>
           <tr><td><span class="sw" style="background:#3a5f2a"></span></td><td>Brush · <span class="sw" style="background:#1d4023"></span> Timber · <span class="sw" style="background:#3573b9"></span> Water/bare</td></tr>
+          <tr><td><span class="sw" style="background:#ffd23f"></span></td><td>Supply hose (4–5″) · <span class="sw" style="background:#ff5d5d"></span> Attack hose (≤3″)</td></tr>
         </table>
         <p class="fine">Spread rates are calibrated to published grass-fire behavior (head fire ≈ 15–20% of the 10-m wind; Anderson ellipse shapes; slow sheltered timber). No slope, spotting or fuel-moisture effects — a training discussion driver, not a prediction tool.</p>
       </div>

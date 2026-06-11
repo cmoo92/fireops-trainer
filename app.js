@@ -39,21 +39,45 @@ const NEIGH = [
 ];
 
 const UNIT_TYPES = {
-  engine:    { emoji: '🚒', label: 'Engine',   prefix: 'E',  sup: { r: 20, p: 0.50 } },
-  brush:     { emoji: '🛻', label: 'Brush',    prefix: 'BR', sup: { r: 15, p: 0.45 } },
-  tender:    { emoji: '🚛', label: 'Tender',   prefix: 'T',  sup: { r: 12, p: 0.30 } },
-  dozer:     { emoji: '🚜', label: 'Dozer',    prefix: 'DZ', line: true },
-  crew:      { emoji: '👷', label: 'Crew',     prefix: 'C',  sup: { r: 10, p: 0.35 } },
-  helo:      { emoji: '🚁', label: 'Helo',     prefix: 'H',  sup: { r: 28, p: 0.65 } },
-  tanker:    { emoji: '✈️', label: 'Tanker',   prefix: 'AT', drop: true },
-  medic:     { emoji: '🚑', label: 'Medic',    prefix: 'M' },
-  command:   { emoji: '⛺', label: 'ICP',      prefix: 'IC' },
-  water:     { emoji: '💧', label: 'Water',    prefix: 'W' },
-  structure: { emoji: '🏠', label: 'Structure', prefix: 'S' },
-  victim:    { emoji: '🧍', label: 'Victim',   prefix: 'V' },
-  hazard:    { emoji: '⚠️', label: 'Hazard',   prefix: 'HZ' },
+  engine:    { emoji: '🚒', label: 'Engine',    prefix: 'E',   sup: { r: 20, p: 0.50 }, cats: ['wild', 'struct'] },
+  ladder:    { emoji: '🪜', label: 'Ladder',    prefix: 'L',   sup: { r: 25, p: 0.55 }, cats: ['struct'] },
+  brush:     { emoji: '🛻', label: 'Brush',     prefix: 'BR',  sup: { r: 15, p: 0.45 }, cats: ['wild'] },
+  tender:    { emoji: '🚛', label: 'Tender',    prefix: 'T',   sup: { r: 12, p: 0.30 }, cats: ['wild', 'struct'] },
+  dozer:     { emoji: '🚜', label: 'Dozer',     prefix: 'DZ',  line: true,              cats: ['wild'] },
+  crew:      { emoji: '👷', label: 'Crew',      prefix: 'C',   sup: { r: 10, p: 0.35 }, cats: ['wild', 'struct'] },
+  helo:      { emoji: '🚁', label: 'Helo',      prefix: 'H',   sup: { r: 28, p: 0.65 }, cats: ['wild', 'ems'] },
+  tanker:    { emoji: '✈️', label: 'Tanker',    prefix: 'AT',  drop: true,              cats: ['wild'] },
+  medic:     { emoji: '🚑', label: 'Medic',     prefix: 'M',                            cats: ['struct', 'ems'] },
+  command:   { emoji: '⛺', label: 'ICP',       prefix: 'IC',                           cats: ['wild', 'struct', 'ems'] },
+  sfire:     { emoji: '🏠🔥', label: 'Str. fire', prefix: 'SF', sfire: true,            cats: ['struct'] },
+  hydrant:   { emoji: '🚰', label: 'Hydrant',   prefix: 'HYD',                          cats: ['struct'] },
+  droptank:  { emoji: '🛢️', label: 'Drop tank', prefix: 'DT',                           cats: ['struct'] },
+  water:     { emoji: '💧', label: 'Water src', prefix: 'W',                            cats: ['wild', 'struct'] },
+  structure: { emoji: '🏠', label: 'Exposure',  prefix: 'S',                            cats: ['wild', 'struct'] },
+  victim:    { emoji: '🧍', label: 'Victim',    prefix: 'V',                            cats: ['wild', 'ems'] },
+  patient:   { emoji: '🤕', label: 'Patient',   prefix: 'PT',                           cats: ['ems'] },
+  staging:   { emoji: '🚩', label: 'Staging',   prefix: 'STG',                          cats: ['struct', 'ems'] },
+  lz:        { badge: 'LZ', label: 'LZ',        prefix: 'LZ',                           cats: ['ems'] },
+  hazard:    { emoji: '⚠️', label: 'Hazard',    prefix: 'HZ',                           cats: ['wild', 'struct', 'ems'] },
 };
-const UNIT_ORDER = Object.keys(UNIT_TYPES);
+const PAL_CATS = [
+  { id: 'wild', label: 'Wildland' },
+  { id: 'struct', label: 'Structure' },
+  { id: 'ems', label: 'EMS' },
+];
+
+/* structure-fire stage machine (sim-seconds since placement) */
+const SF_STAGES = [
+  { n: 'Smoke showing',  i: '🏠', b: '💨' },
+  { n: 'Working fire',   i: '🏠', b: '🔥' },
+  { n: 'Fully involved', i: '🏚️', b: '🔥' },
+  { n: 'Burned out',     i: '🏚️', b: '' },
+  { n: 'Knocked down',   i: '🏠', b: '💧' },
+];
+const SF_T_WORKING = 180, SF_T_INVOLVED = 480, SF_T_BURNOUT = 1500;
+
+/* hose friction loss: FL = C * (gpm/100)^2 * (ft/100)  (IFSTA coefficients) */
+const HOSE_C = { '1.75': 15.5, '2.5': 2, '3': 0.8, '4': 0.2, '5': 0.08 };
 
 const BRUSH_SIZES = [
   { label: 'Sm', r: 0 },
@@ -73,9 +97,12 @@ const cells = new Map();          // "i,j" -> {s:1 burning|2 burned, t, t0}
 const burning = new Set();        // keys of burning cells
 const mods = new Map();           // "i,j" -> {f:'grass'|'brush'|'timber'|'water'|'break'|'ret'}
 const wet = new Map();            // "i,j" -> ttl
-const units = [];                 // {id,type,name,working,marker,circle}
+const units = [];                 // {id,type,name,working,notes,marker,circle,sf?}
 let unitSeq = 0;
 const typeCounts = {};
+const hoses = [];                 // {id,pts,dia,gpm,line,label}
+let hoseSeq = 0;
+let palCat = 'wild';              // active unit-palette tab
 
 let windFromDeg = 270;            // direction wind is FROM (meteorological)
 let windSpeed = 10;               // mph
@@ -289,24 +316,42 @@ function redrawFire() {
 
 /* -------------------------------- smoke -------------------------------- */
 
+function puff(lat, lng, tone, sizeMul = 1) {
+  if (particles.length > 750) return;
+  particles.push({
+    lat, lng,
+    age: 0,
+    life: 7 + Math.random() * 9,             // seconds (wall-clock)
+    r0: CELL * (0.4 + Math.random() * 0.5) * sizeMul,
+    jx: (Math.random() - 0.5) * 1.6,         // m/s sideways jitter
+    jy: (Math.random() - 0.5) * 1.6,
+    tone,
+  });
+}
+
 function spawnSmoke() {
-  if (!smokeEnabled || burning.size === 0) return;
-  const n = clamp(Math.round(burning.size / 4), 1, 22);
-  const keys = [...burning];
-  for (let q = 0; q < n; q++) {
-    if (particles.length > 700) break;
-    const k = keys[(Math.random() * keys.length) | 0];
-    const [i, j] = parseKey(k);
-    const [lat, lng] = cellSW(i + Math.random(), j + Math.random());
-    particles.push({
-      lat, lng,
-      age: 0,
-      life: 7 + Math.random() * 9,           // seconds (wall-clock)
-      r0: CELL * (0.4 + Math.random() * 0.5),
-      jx: (Math.random() - 0.5) * 1.6,       // m/s sideways jitter
-      jy: (Math.random() - 0.5) * 1.6,
-      dark: Math.random() < 0.35,
-    });
+  if (!smokeEnabled) return;
+  // wildland fire smoke
+  if (burning.size > 0) {
+    const n = clamp(Math.round(burning.size / 4), 1, 22);
+    const keys = [...burning];
+    for (let q = 0; q < n; q++) {
+      const k = keys[(Math.random() * keys.length) | 0];
+      const [i, j] = parseKey(k);
+      const [lat, lng] = cellSW(i + Math.random(), j + Math.random());
+      puff(lat, lng, Math.random() < 0.35 ? 'dark' : 'light');
+    }
+  }
+  // structure-fire smoke columns
+  for (const u of units) {
+    if (!UNIT_TYPES[u.type].sfire) continue;
+    const sf = u.sf;
+    const ll = u.marker.getLatLng();
+    const jit = () => (Math.random() - 0.5) * 0.00012;
+    if (sf.stage === 0) puff(ll.lat + jit(), ll.lng + jit(), 'light', 0.8);
+    else if (sf.stage === 1) { puff(ll.lat + jit(), ll.lng + jit(), 'dark', 1.2); puff(ll.lat + jit(), ll.lng + jit(), 'dark', 0.9); }
+    else if (sf.stage === 2) for (let q = 0; q < 4; q++) puff(ll.lat + jit(), ll.lng + jit(), 'dark', 1.6);
+    else if (sf.stage === 4 && simTime - sf.knockedAt < 120) puff(ll.lat + jit(), ll.lng + jit(), 'white', 1.1);
   }
 }
 
@@ -337,9 +382,9 @@ function drawSmoke() {
     const pt = map.latLngToContainerPoint([p.lat, p.lng]);
     const rad = (p.r0 + f * CELL * 6) / mpp;
     if (pt.x < -rad || pt.y < -rad || pt.x > w + rad || pt.y > h + rad) continue;
-    const a = (1 - f) * (p.dark ? 0.34 : 0.22);
-    const shade = p.dark ? 70 : 130;
-    sctx.fillStyle = `rgba(${shade},${shade},${shade},${a})`;
+    const tone = p.tone === 'dark' ? [60, 0.34] : p.tone === 'white' ? [225, 0.30] : [135, 0.22];
+    const a = (1 - f) * tone[1];
+    sctx.fillStyle = `rgba(${tone[0]},${tone[0]},${tone[0]},${a})`;
     sctx.beginPath();
     sctx.arc(pt.x, pt.y, Math.max(rad, 1.5), 0, Math.PI * 2);
     sctx.fill();
@@ -431,6 +476,26 @@ function tick() {
     }
   }
 
+  // structure fires & exposures
+  for (const u of units) {
+    const def = UNIT_TYPES[u.type];
+    if (def.sfire) sfireTick(u);
+    else if (u.type === 'structure' && origin && simTime % 60 === 0) {
+      // a wildland fire reaching an exposure sets it alight
+      const [ci, cj] = llToCell(u.marker.getLatLng());
+      let hit = false;
+      for (let di = -2; di <= 2 && !hit; di++)
+        for (let dj = -2; dj <= 2 && !hit; dj++)
+          if (burning.has(key(ci + di, cj + dj))) hit = true;
+      if (hit) {
+        u.type = 'sfire';
+        u.sf = { start: simTime, knock: 0, stage: 1, knockedAt: 0 };
+        refreshUnitVisuals(u);
+        toast(`${u.name} has caught fire!`, 3500);
+      }
+    }
+  }
+
   // wet decay
   for (const [k, ttl] of wet) {
     if (ttl <= 1) wet.delete(k);
@@ -445,6 +510,56 @@ function tick() {
     $('#playBtn').textContent = '▶';
     $('#playBtn').classList.add('paused');
     toast('Fire exceeded simulation limits — paused. Reset fire to continue.', 4000);
+  }
+}
+
+function sfireTick(u) {
+  const sf = u.sf;
+  if (sf.stage === 3 || sf.stage === 4) return;   // burned out / knocked
+
+  // knockdown from Working suppression units close to the building
+  let pow = 0;
+  const ll = u.marker.getLatLng();
+  for (const o of units) {
+    const od = UNIT_TYPES[o.type];
+    if (o !== u && o.working && od.sup &&
+        ll.distanceTo(o.marker.getLatLng()) <= Math.max(30, od.sup.r)) {
+      pow += od.sup.p;
+    }
+  }
+  if (pow > 0) {
+    sf.knock += pow * 0.10;                        // one engine ≈ 3 sim-min to knock
+    if (sf.knock >= 1) {
+      sf.stage = 4;
+      sf.knockedAt = simTime;
+      refreshUnitVisuals(u);
+      toast(`${u.name} knocked down`);
+      return;
+    }
+  } else {
+    sf.knock = Math.max(0, sf.knock - 0.01);
+  }
+
+  const age = simTime - sf.start;
+  const ns = age < SF_T_WORKING ? 0 : age < SF_T_INVOLVED ? 1 : age < SF_T_BURNOUT ? 2 : 3;
+  if (ns !== sf.stage) { sf.stage = ns; refreshUnitVisuals(u); }
+
+  // fully involved buildings throw embers into nearby fuels, downwind-biased
+  if (sf.stage === 2 && Math.random() < 0.12) {
+    ensureOrigin(ll);
+    const toRad = ((windFromDeg + 180) % 360) * Math.PI / 180;
+    const br = toRad + (Math.random() - 0.5) * 1.6;
+    const dM = 10 + Math.random() * 18;
+    const lat = ll.lat + Math.cos(br) * dM / 111320;
+    const lng = ll.lng + Math.sin(br) * dM / (111320 * Math.cos(ll.lat * Math.PI / 180));
+    const [ci, cj] = llToCell({ lat, lng });
+    const k = key(ci, cj);
+    const fuel = fuelAt(k);
+    if (!cells.has(k) && fuel) {
+      const dur = BURN_TICKS[fuel] + ((Math.random() * 3) | 0);
+      cells.set(k, { s: 1, t: dur, t0: dur });
+      burning.add(k);
+    }
   }
 }
 
@@ -487,7 +602,7 @@ function setTool(t) {
   document.querySelectorAll('#toolbar .tool[data-tool]').forEach((b) => {
     b.classList.toggle('active', b.dataset.tool === t);
   });
-  const painting = PAINT_TOOLS.has(t);
+  const painting = PAINT_TOOLS.has(t) || t === 'hose';
   if (painting) {
     map.dragging.disable();
     mapEl.classList.add('crosshair');
@@ -536,26 +651,58 @@ function paintAt(latlng) {
   updateStats();
 }
 
-/* pointer painting */
+/* pointer painting + hose drawing */
 let painting = false;
+const hoseDraft = { active: false, pts: [], line: null };
+
+function evToLatLng(e) {
+  const rect = mapEl.getBoundingClientRect();
+  return map.containerPointToLatLng([e.clientX - rect.left, e.clientY - rect.top]);
+}
+
 mapEl.addEventListener('pointerdown', (e) => {
-  if (!PAINT_TOOLS.has(tool)) return;
   if (e.target.closest('.leaflet-marker-icon') || e.target.closest('.leaflet-control')) return;
+  if (tool === 'hose') {
+    hoseDraft.active = true;
+    hoseDraft.pts = [evToLatLng(e)];
+    hoseDraft.line = L.polyline(hoseDraft.pts, { color: '#ffd23f', weight: 4, dashArray: '6 6' }).addTo(map);
+    mapEl.setPointerCapture(e.pointerId);
+    e.preventDefault();
+    return;
+  }
+  if (!PAINT_TOOLS.has(tool)) return;
   painting = true;
   mapEl.setPointerCapture(e.pointerId);
-  paintFromEvent(e);
+  paintAt(evToLatLng(e));
   e.preventDefault();
 });
-mapEl.addEventListener('pointermove', (e) => { if (painting) paintFromEvent(e); });
+mapEl.addEventListener('pointermove', (e) => {
+  if (hoseDraft.active) {
+    const ll = evToLatLng(e);
+    if (map.distance(ll, hoseDraft.pts[hoseDraft.pts.length - 1]) > 4) {
+      hoseDraft.pts.push(ll);
+      hoseDraft.line.setLatLngs(hoseDraft.pts);
+    }
+    return;
+  }
+  if (painting) paintAt(evToLatLng(e));
+});
 ['pointerup', 'pointercancel'].forEach((ev) =>
-  mapEl.addEventListener(ev, () => { painting = false; })
+  mapEl.addEventListener(ev, () => {
+    painting = false;
+    if (hoseDraft.active) {
+      hoseDraft.active = false;
+      hoseDraft.line.remove();
+      const pts = hoseDraft.pts.map((p) => [p.lat, p.lng]);
+      if (hoseLenM(pts) >= 15) {
+        const h = addHose(pts);
+        toast(`Hose lay: ${Math.round(hoseLenM(h.pts) * 3.28084)} ft — tap it for diameter & friction loss`);
+      }
+      hoseDraft.line = null;
+      hoseDraft.pts = [];
+    }
+  })
 );
-
-function paintFromEvent(e) {
-  const rect = mapEl.getBoundingClientRect();
-  const latlng = map.containerPointToLatLng([e.clientX - rect.left, e.clientY - rect.top]);
-  paintAt(latlng);
-}
 
 /* unit placement via map click */
 map.on('click', (e) => {
@@ -569,26 +716,41 @@ map.on('click', (e) => {
 
 function unitIcon(u) {
   const def = UNIT_TYPES[u.type];
+  let face, tag = u.name;
+  if (def.badge) {
+    face = `<div class="lz-badge">${def.badge}</div>`;
+  } else if (def.sfire) {
+    const st = SF_STAGES[u.sf.stage];
+    face = `<div class="unit-emoji">${st.i}<span class="sf-badge">${st.b}</span></div>`;
+    tag = `${u.name} · ${st.n}`;
+  } else {
+    face = `<div class="unit-emoji">${def.emoji}</div>`;
+  }
+  if (u.notes) tag += ' 📝';
   return L.divIcon({
     className: '',
-    html: `<div class="unit-icon"><div class="unit-emoji">${def.emoji}</div>` +
-          `<div class="unit-tag ${u.working ? 'working' : ''}">${u.name}</div></div>`,
+    html: `<div class="unit-icon">${face}` +
+          `<div class="unit-tag ${u.working ? 'working' : ''}">${tag}</div></div>`,
     iconSize: [60, 46],
     iconAnchor: [30, 18],
   });
 }
 
-function addUnit(type, latlng, name, working = false) {
+function addUnit(type, latlng, opts = {}) {
   const def = UNIT_TYPES[type];
   typeCounts[type] = (typeCounts[type] || 0) + 1;
   const u = {
     id: ++unitSeq,
     type,
-    name: name || `${def.prefix}${typeCounts[type]}`,
-    working,
+    name: opts.name || `${def.prefix}${typeCounts[type]}`,
+    working: opts.working || false,
+    notes: opts.notes || '',
     marker: null,
     circle: null,
   };
+  if (def.sfire) {
+    u.sf = opts.sf || { start: simTime, knock: 0, stage: 0, knockedAt: 0 };
+  }
   u.marker = L.marker(latlng, {
     draggable: true,
     autoPan: true,
@@ -662,6 +824,39 @@ function buildUnitPopup(u) {
   });
   el.appendChild(nameIn);
 
+  const notesIn = document.createElement('textarea');
+  notesIn.value = u.notes;
+  notesIn.rows = 2;
+  notesIn.placeholder = 'Notes (patient info, flow, assignment…)';
+  notesIn.className = 'unit-notes';
+  notesIn.addEventListener('input', () => {
+    u.notes = notesIn.value;
+    refreshUnitVisuals(u);
+  });
+  el.appendChild(notesIn);
+
+  if (def.sfire) {
+    const info = document.createElement('div');
+    info.className = 'sf-info';
+    const renderInfo = () => {
+      info.textContent = `${SF_STAGES[u.sf.stage].n}` +
+        (u.sf.stage < 3 ? ` · knockdown ${Math.round(Math.min(u.sf.knock, 1) * 100)}%` : '');
+    };
+    renderInfo();
+    const iv = setInterval(() => { if (!info.isConnected) clearInterval(iv); else renderInfo(); }, 800);
+    el.appendChild(info);
+
+    const restart = document.createElement('button');
+    restart.className = 'btn';
+    restart.textContent = '🔁 Restart fire (smoke showing)';
+    restart.addEventListener('click', () => {
+      u.sf = { start: simTime, knock: 0, stage: 0, knockedAt: 0 };
+      refreshUnitVisuals(u);
+      renderInfo();
+    });
+    el.appendChild(restart);
+  }
+
   if (def.sup || def.line) {
     const row = document.createElement('label');
     row.className = 'row';
@@ -719,19 +914,139 @@ function dropRetardant(latlng) {
   toast('Retardant line dropped');
 }
 
-/* build unit palette */
-(function buildPalette() {
+/* -------------------------------- hoses --------------------------------- */
+
+function hoseLenM(pts) {
+  let m = 0;
+  for (let i = 1; i < pts.length; i++) {
+    m += map.distance(pts[i - 1], pts[i]);
+  }
+  return m;
+}
+const hoseColor = (dia) => (parseFloat(dia) >= 4 ? '#ffd23f' : '#ff5d5d');
+
+function addHose(pts, dia = '5', gpm = 800) {
+  const h = { id: ++hoseSeq, pts, dia, gpm, line: null, label: null };
+  h.line = L.polyline(pts, { color: hoseColor(dia), weight: 5, opacity: 0.92 }).addTo(map);
+  h.label = L.marker(pts[Math.floor(pts.length / 2)], {
+    icon: L.divIcon({ className: '', html: '<div class="hose-label"></div>', iconSize: [0, 0] }),
+    interactive: true,
+    keyboard: false,
+  }).addTo(map);
+  h.line.bindPopup(() => buildHosePopup(h), { closeButton: false });
+  h.label.bindPopup(() => buildHosePopup(h), { closeButton: false });
+  updateHose(h);
+  hoses.push(h);
+  return h;
+}
+
+function updateHose(h) {
+  const ft = Math.round(hoseLenM(h.pts) * 3.28084);
+  h.line.setStyle({ color: hoseColor(h.dia) });
+  const el = h.label.getElement();
+  const lab = el && el.querySelector('.hose-label');
+  if (lab) {
+    lab.textContent = `${ft} ft · ${h.dia}″`;
+    lab.style.borderColor = hoseColor(h.dia);
+    lab.style.color = hoseColor(h.dia);
+  }
+}
+
+function removeHose(h) {
+  h.line.remove();
+  h.label.remove();
+  const i = hoses.indexOf(h);
+  if (i >= 0) hoses.splice(i, 1);
+}
+
+function buildHosePopup(h) {
+  const el = document.createElement('div');
+  el.className = 'unit-popup';
+  const ft = Math.round(hoseLenM(h.pts) * 3.28084);
+
+  const title = document.createElement('div');
+  title.innerHTML = `<b>🚒 Hose lay — ${ft} ft</b>`;
+  el.appendChild(title);
+
+  const row1 = document.createElement('label');
+  row1.className = 'row';
+  row1.innerHTML = '<span>Diameter</span>';
+  const diaSel = document.createElement('select');
+  for (const d of Object.keys(HOSE_C)) {
+    const o = document.createElement('option');
+    o.value = d;
+    o.textContent = d + '″' + (parseFloat(d) >= 4 ? ' (supply)' : ' (attack)');
+    if (d === h.dia) o.selected = true;
+    diaSel.appendChild(o);
+  }
+  row1.appendChild(diaSel);
+  el.appendChild(row1);
+
+  const row2 = document.createElement('label');
+  row2.className = 'row';
+  row2.innerHTML = '<span>Flow (GPM)</span>';
+  const gpmIn = document.createElement('input');
+  gpmIn.type = 'number';
+  gpmIn.value = h.gpm;
+  gpmIn.min = 50; gpmIn.max = 2000; gpmIn.step = 50;
+  gpmIn.style.width = '80px';
+  row2.appendChild(gpmIn);
+  el.appendChild(row2);
+
+  const fl = document.createElement('div');
+  fl.className = 'sf-info';
+  const recompute = () => {
+    const loss = HOSE_C[h.dia] * Math.pow(h.gpm / 100, 2) * (ft / 100);
+    fl.textContent = `Friction loss ≈ ${Math.round(loss)} psi (flat ground)`;
+  };
+  recompute();
+  diaSel.addEventListener('change', () => { h.dia = diaSel.value; updateHose(h); recompute(); });
+  gpmIn.addEventListener('input', () => { h.gpm = +gpmIn.value || 0; recompute(); });
+  el.appendChild(fl);
+
+  const delBtn = document.createElement('button');
+  delBtn.className = 'btn danger';
+  delBtn.textContent = '🗑 Remove hose';
+  delBtn.addEventListener('click', () => removeHose(h));
+  el.appendChild(delBtn);
+
+  return el;
+}
+
+/* build unit palette (tabbed by scenario type) */
+function buildPalette() {
   const pal = $('#unitPalette');
-  for (const t of UNIT_ORDER) {
+  pal.innerHTML = '';
+  for (const t of Object.keys(UNIT_TYPES)) {
     const def = UNIT_TYPES[t];
+    if (!def.cats.includes(palCat)) continue;
     const b = document.createElement('button');
     b.className = 'tool';
     b.dataset.tool = 'unit:' + t;
     b.title = 'Place ' + def.label;
-    b.innerHTML = `${def.emoji}<span>${def.label}</span>`;
+    const face = def.badge ? `<span class="lz-mini">${def.badge}</span>` : def.emoji;
+    b.innerHTML = `${face}<span>${def.label}</span>`;
     b.addEventListener('click', () => setTool(tool === 'unit:' + t ? 'pan' : 'unit:' + t));
     pal.appendChild(b);
   }
+}
+(function buildPalTabs() {
+  const tabs = $('#palTabs');
+  for (const c of PAL_CATS) {
+    const b = document.createElement('button');
+    b.className = 'pal-tab' + (c.id === palCat ? ' active' : '');
+    b.dataset.cat = c.id;
+    b.textContent = c.label;
+    b.addEventListener('click', () => {
+      palCat = c.id;
+      tabs.querySelectorAll('.pal-tab').forEach((x) =>
+        x.classList.toggle('active', x.dataset.cat === palCat));
+      if (tool.startsWith('unit:')) setTool('pan');
+      buildPalette();
+    });
+    tabs.appendChild(b);
+  }
+  buildPalette();
 })();
 
 /* tool buttons */
@@ -824,8 +1139,10 @@ function serialize() {
     wet: [...wet],
     units: units.map((u) => {
       const ll = u.marker.getLatLng();
-      return { type: u.type, lat: ll.lat, lng: ll.lng, name: u.name, working: u.working };
+      return { type: u.type, lat: ll.lat, lng: ll.lng, name: u.name, working: u.working,
+               notes: u.notes || '', sf: u.sf || null };
     }),
+    hoses: hoses.map((h) => ({ pts: h.pts, dia: h.dia, gpm: h.gpm })),
   };
 }
 
@@ -834,6 +1151,7 @@ function loadScenario(d) {
   cells.clear(); burning.clear(); mods.clear(); wet.clear();
   particles.length = 0;
   [...units].forEach(removeUnit);
+  [...hoses].forEach(removeHose);
   for (const t in typeCounts) typeCounts[t] = 0;
 
   CELL = d.cell || 10;
@@ -853,7 +1171,9 @@ function loadScenario(d) {
   }
   for (const [k, f] of d.mods || []) mods.set(k, { f });
   for (const [k, ttl] of d.wet || []) wet.set(k, ttl);
-  for (const u of d.units || []) addUnit(u.type, [u.lat, u.lng], u.name, u.working);
+  for (const u of d.units || [])
+    addUnit(u.type, [u.lat, u.lng], { name: u.name, working: u.working, notes: u.notes, sf: u.sf || undefined });
+  for (const h of d.hoses || []) addHose(h.pts, h.dia, h.gpm);
 
   if (d.view) map.setView([d.view.lat, d.view.lng], d.view.zoom);
   running = false;
@@ -995,10 +1315,11 @@ $('#clearUnitsBtn').addEventListener('click', () => {
 });
 
 $('#clearAllBtn').addEventListener('click', () => {
-  if (!confirm('Clear fire, lines, fuels AND units?')) return;
+  if (!confirm('Clear fire, lines, fuels, hoses AND units?')) return;
   cells.clear(); burning.clear(); mods.clear(); wet.clear();
   particles.length = 0;
   [...units].forEach(removeUnit);
+  [...hoses].forEach(removeHose);
   for (const t in typeCounts) typeCounts[t] = 0;
   simTime = 0;
   origin = null;
@@ -1031,9 +1352,9 @@ const TOUR_STEPS = [
   { sel: '.sim-controls', title: '5 · Run the scenario',
     text: '▶ starts and pauses. Tap 1× to fast-forward up to 8×. Elapsed time and acres burned show here, and Reset fire reruns the same problem.' },
   { sel: '[data-tool="unit:engine"]', title: '6 · Assign resources',
-    text: 'Tap a unit type, then tap the map to place it. Drag units to move them. Tap one to rename it, set it Working (it knocks down fire nearby), or remove it.' },
+    text: 'Tap a unit type, then tap the map to place it. Drag to move; tap one to rename it, add notes, set it Working, or remove it. The tabs switch between Wildland, Structure and EMS kits — including 🏠🔥 structure fires, 🚰 hydrants, 🛢️ drop tanks, 🤕 patients and LZs.' },
   { sel: '[data-tool="line"]', title: '7 · Go defensive',
-    text: 'Fire line paints a fuel break by hand. The 🚜 dozer cuts line as you drag it, and the ✈️ tanker drops retardant.' },
+    text: 'Fire line paints a fuel break, the 🚜 dozer cuts line as you drag it, the ✈️ tanker drops retardant — and the 🪢 Hose tool draws a hose lay with live length and friction loss.' },
   { sel: '#menuBtn', title: '8 · Scenarios & more',
     text: 'Save and share scenarios, paint fuels, see the legend — or run this tour again any time.',
     cta: 'Finish' },

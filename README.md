@@ -3,7 +3,8 @@
 **Live app:** https://cmoo92.github.io/fireops-trainer/ — open it on any phone/tablet/laptop.
 
 A touch-friendly web sandbox for fire department training scenarios: satellite imagery,
-wind-driven wildland fire spread, drifting smoke, and placeable apparatus/personnel.
+wind-driven wildland fire spread, structure fires with water-supply planning, EMS call
+setup, drifting smoke, and placeable apparatus/personnel.
 
 > The spread model is a simplified wind-driven cellular model meant to drive training
 > discussion ("the fire is now at the fence line — what's your move?"). It is **not**
@@ -58,10 +59,33 @@ from ☰ → *Take the tour*).
 6. **Track the clock** — elapsed scenario time and acreage in the top bar. **Reset fire**
    clears fire but keeps units/lines so you can rerun the same problem.
 
+## Structure fires & water supply
+
+The unit bar has **Wildland / Structure / EMS** tabs.
+
+- **🏠🔥 Str. fire** — place it on a building; it progresses *smoke showing → working
+  fire → fully involved → burned out* on the scenario clock. Park units with
+  **Working** enabled next to it to knock it down (one engine ≈ 3 sim-minutes).
+  Fully involved buildings throw embers into surrounding fuels, downwind-biased.
+- **🏠 Exposure** — a plain structure that converts to a structure fire if the
+  wildland fire reaches it (WUI drills).
+- **🪢 Hose tool** — drag along the route of a lay; it shows live length in feet.
+  Tap the lay to set diameter (1¾″–5″) and GPM — it computes friction loss with the
+  standard `C·(Q/100)²·(L/100)` coefficients. Supply lines draw yellow, attack lines red.
+- **🚰 Hydrant, 🛢️ Drop tank, 💧 Water source, 🚩 Staging** — placeable water/ops
+  points for tender-shuttle and relay planning.
+
+## EMS calls
+
+🤕 Patients, 🧍 victims, LZ (landing-zone) markers, staging and medic units — every
+unit takes free-text **notes** (tap it), so you can script "62M, chest pain, 2nd
+floor" and run the call against the scenario clock.
+
 ## Scenarios
 
 ☰ menu → Save/Load (stored in the browser) or Export/Import as `.json` files to share
-between devices or pre-build problems for drill night.
+between devices or pre-build problems for drill night. Saves include fire state,
+fuels/lines, units (with notes and structure-fire stage), and hose lays.
 
 ## Tech
 

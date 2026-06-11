@@ -145,6 +145,57 @@ html, body {
 .tool.active span { color: #fff; }
 .tool:active { transform: scale(.96); }
 
+/* unit palette tabs */
+.pal-tabs { display: flex; flex-direction: column; gap: 3px; justify-content: center; }
+.pal-tab {
+  height: 22px; padding: 0 10px;
+  font-size: 11px; font-weight: 700;
+  background: var(--bg3); color: var(--fg-dim);
+  border: 1px solid #00000066; border-radius: 7px;
+  cursor: pointer; white-space: nowrap;
+  touch-action: manipulation;
+}
+.pal-tab.active { background: var(--accent); color: #fff; border-color: var(--accent2); }
+
+/* hose */
+.hose-label {
+  transform: translate(-50%, -50%);
+  background: rgba(10, 14, 18, .88);
+  border: 1px solid #ffd23f;
+  color: #ffd23f; font-weight: 700; font-size: 11px;
+  padding: 1px 6px; border-radius: 7px; white-space: nowrap;
+  text-shadow: 0 1px 2px #000;
+}
+
+/* LZ + structure-fire marker bits */
+.lz-badge {
+  width: 30px; height: 30px; border-radius: 50%;
+  background: #c92a3a; border: 2px solid #fff; color: #fff;
+  font-weight: 800; font-size: 12px;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 2px 5px rgba(0,0,0,.8);
+}
+.lz-mini {
+  width: 22px; height: 22px; border-radius: 50%;
+  background: #c92a3a; border: 2px solid #fff; color: #fff;
+  font-weight: 800; font-size: 10px;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.unit-emoji { position: relative; }
+.sf-badge { position: absolute; right: -10px; top: -8px; font-size: 16px; }
+
+/* unit popup extras */
+.unit-notes {
+  background: #0b0e12; color: var(--fg); border: 1px solid #00000088;
+  border-radius: 8px; padding: 8px; font-size: 13px; width: 100%;
+  font-family: inherit; resize: vertical;
+}
+.sf-info { color: var(--accent2); font-size: 13px; font-weight: 600; }
+.unit-popup select, .unit-popup input[type="number"] {
+  background: #0b0e12; color: var(--fg); border: 1px solid #00000088;
+  border-radius: 8px; padding: 6px; font-size: 14px; min-height: 38px;
+}
+
 #fuelSelect, #cellSizeSel {
   min-height: 44px; background: var(--bg3); color: var(--fg);
   border: 1px solid #00000066; border-radius: var(--radius);
