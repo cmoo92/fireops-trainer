@@ -489,7 +489,7 @@ function tick() {
           if (burning.has(key(ci + di, cj + dj))) hit = true;
       if (hit) {
         u.type = 'sfire';
-        u.sf = { start: simTime, knock: 0, stage: 1, knockedAt: 0 };
+        u.sf = { start: simTime, knock: 0, stage: 1, knockedAt: 0, embers: true };
         refreshUnitVisuals(u);
         toast(`${u.name} has caught fire!`, 3500);
       }
@@ -545,7 +545,7 @@ function sfireTick(u) {
   if (ns !== sf.stage) { sf.stage = ns; refreshUnitVisuals(u); }
 
   // fully involved buildings throw embers into nearby fuels, downwind-biased
-  if (sf.stage === 2 && Math.random() < 0.12) {
+  if (sf.stage === 2 && sf.embers !== false && Math.random() < 0.12) {
     ensureOrigin(ll);
     const toRad = ((windFromDeg + 180) % 360) * Math.PI / 180;
     const br = toRad + (Math.random() - 0.5) * 1.6;
@@ -598,12 +598,14 @@ function frame(ts) {
 const PAINT_TOOLS = new Set(['ignite', 'extinguish', 'line', 'fuel']);
 
 function setTool(t) {
+  if (tool === 'hose' && t !== 'hose') cancelHoseDraft();
   tool = t;
   document.querySelectorAll('#toolbar .tool[data-tool]').forEach((b) => {
     b.classList.toggle('active', b.dataset.tool === t);
   });
-  const painting = PAINT_TOOLS.has(t) || t === 'hose';
-  if (painting) {
+  // only freehand paint tools lock the map; hose & unit placement keep pan/zoom live
+  const lockMap = PAINT_TOOLS.has(t);
+  if (lockMap) {
     map.dragging.disable();
     mapEl.classList.add('crosshair');
     mapEl.style.touchAction = 'none';
@@ -612,7 +614,8 @@ function setTool(t) {
     mapEl.classList.remove('crosshair');
     mapEl.style.touchAction = '';
   }
-  if (t.startsWith('unit:')) {
+  if (t === 'hose') startHoseDraft();
+  else if (t.startsWith('unit:')) {
     toast(`Tap the map to place ${UNIT_TYPES[t.slice(5)].label}`);
   }
 }
@@ -651,9 +654,8 @@ function paintAt(latlng) {
   updateStats();
 }
 
-/* pointer painting + hose drawing */
+/* pointer painting (ignite / erase fire / fire line / fuel) */
 let painting = false;
-const hoseDraft = { active: false, pts: [], line: null };
 
 function evToLatLng(e) {
   const rect = mapEl.getBoundingClientRect();
@@ -661,51 +663,21 @@ function evToLatLng(e) {
 }
 
 mapEl.addEventListener('pointerdown', (e) => {
-  if (e.target.closest('.leaflet-marker-icon') || e.target.closest('.leaflet-control')) return;
-  if (tool === 'hose') {
-    hoseDraft.active = true;
-    hoseDraft.pts = [evToLatLng(e)];
-    hoseDraft.line = L.polyline(hoseDraft.pts, { color: '#ffd23f', weight: 4, dashArray: '6 6' }).addTo(map);
-    mapEl.setPointerCapture(e.pointerId);
-    e.preventDefault();
-    return;
-  }
   if (!PAINT_TOOLS.has(tool)) return;
+  if (e.target.closest('.leaflet-marker-icon') || e.target.closest('.leaflet-control')) return;
   painting = true;
   mapEl.setPointerCapture(e.pointerId);
   paintAt(evToLatLng(e));
   e.preventDefault();
 });
-mapEl.addEventListener('pointermove', (e) => {
-  if (hoseDraft.active) {
-    const ll = evToLatLng(e);
-    if (map.distance(ll, hoseDraft.pts[hoseDraft.pts.length - 1]) > 4) {
-      hoseDraft.pts.push(ll);
-      hoseDraft.line.setLatLngs(hoseDraft.pts);
-    }
-    return;
-  }
-  if (painting) paintAt(evToLatLng(e));
-});
+mapEl.addEventListener('pointermove', (e) => { if (painting) paintAt(evToLatLng(e)); });
 ['pointerup', 'pointercancel'].forEach((ev) =>
-  mapEl.addEventListener(ev, () => {
-    painting = false;
-    if (hoseDraft.active) {
-      hoseDraft.active = false;
-      hoseDraft.line.remove();
-      const pts = hoseDraft.pts.map((p) => [p.lat, p.lng]);
-      if (hoseLenM(pts) >= 15) {
-        const h = addHose(pts);
-        toast(`Hose lay: ${Math.round(hoseLenM(h.pts) * 3.28084)} ft — tap it for diameter & friction loss`);
-      }
-      hoseDraft.line = null;
-      hoseDraft.pts = [];
-    }
-  })
+  mapEl.addEventListener(ev, () => { painting = false; })
 );
 
 /* unit placement via map click */
 map.on('click', (e) => {
+  if (tool === 'hose') { addHoseVertex(e.latlng); return; }
   if (tool.startsWith('unit:')) {
     addUnit(tool.slice(5), e.latlng);
     setTool('pan');
@@ -749,7 +721,8 @@ function addUnit(type, latlng, opts = {}) {
     circle: null,
   };
   if (def.sfire) {
-    u.sf = opts.sf || { start: simTime, knock: 0, stage: 0, knockedAt: 0 };
+    u.sf = opts.sf || { start: simTime, knock: 0, stage: 0, knockedAt: 0, embers: true };
+    if (u.sf.embers === undefined) u.sf.embers = true;   // default on for old saves
   }
   u.marker = L.marker(latlng, {
     draggable: true,
@@ -850,11 +823,22 @@ function buildUnitPopup(u) {
     restart.className = 'btn';
     restart.textContent = '🔁 Restart fire (smoke showing)';
     restart.addEventListener('click', () => {
-      u.sf = { start: simTime, knock: 0, stage: 0, knockedAt: 0 };
+      u.sf = { start: simTime, knock: 0, stage: 0, knockedAt: 0, embers: u.sf.embers };
       refreshUnitVisuals(u);
       renderInfo();
     });
     el.appendChild(restart);
+
+    const erow = document.createElement('label');
+    erow.className = 'row';
+    erow.innerHTML = '<span>Cast embers into wildland fuels</span>';
+    const echk = document.createElement('input');
+    echk.type = 'checkbox';
+    echk.checked = u.sf.embers !== false;
+    echk.style.cssText = 'width:24px;height:24px;accent-color:#ff7a1a;';
+    echk.addEventListener('change', () => { u.sf.embers = echk.checked; });
+    erow.appendChild(echk);
+    el.appendChild(erow);
   }
 
   if (def.sup || def.line) {
@@ -1012,6 +996,76 @@ function buildHosePopup(h) {
 
   return el;
 }
+
+/* hose drawing: tap to drop points; pan & zoom stay live between taps.
+   (drag-to-draw was unusable on touch — a pan gesture drew a hose) */
+const hoseDraft = { active: false, pts: [], verts: [], preview: null };
+
+function startHoseDraft() {
+  cleanupHoseDraft();
+  hoseDraft.active = true;
+  hoseDraft.preview = L.polyline([], { color: '#ffd23f', weight: 4, dashArray: '6 6' }).addTo(map);
+  map.doubleClickZoom.disable();
+  $('#hoseHint').hidden = false;
+  updateHoseHint();
+}
+function addHoseVertex(latlng) {
+  if (!hoseDraft.active) return;
+  hoseDraft.pts.push(latlng);
+  hoseDraft.verts.push(
+    L.circleMarker(latlng, {
+      radius: 5, color: '#ffd23f', weight: 2,
+      fillColor: '#14181d', fillOpacity: 1, interactive: false,
+    }).addTo(map)
+  );
+  hoseDraft.preview.setLatLngs(hoseDraft.pts);
+  updateHoseHint();
+}
+function undoHoseVertex() {
+  if (!hoseDraft.pts.length) return;
+  hoseDraft.pts.pop();
+  const v = hoseDraft.verts.pop();
+  if (v) v.remove();
+  hoseDraft.preview.setLatLngs(hoseDraft.pts);
+  updateHoseHint();
+}
+function updateHoseHint() {
+  const n = hoseDraft.pts.length;
+  const ft = Math.round(hoseLenM(hoseDraft.pts) * 3.28084);
+  $('#hoseHintText').textContent =
+    n === 0 ? 'Tap the map to start the hose lay — pan & zoom still work' :
+    n === 1 ? 'Tap to add the next point along the route' :
+    `${ft} ft · ${n} points — tap to extend, then Finish`;
+}
+function finishHoseDraft() {
+  const pts = hoseDraft.pts.slice();
+  const ok = pts.length >= 2 && hoseLenM(pts) >= 8;
+  cleanupHoseDraft();
+  tool = 'pan';
+  setTool('pan');
+  if (ok) {
+    const h = addHose(pts.map((p) => [p.lat, p.lng]));
+    toast(`Hose lay: ${Math.round(hoseLenM(h.pts) * 3.28084)} ft — tap it to set diameter & GPM`);
+  } else {
+    toast('A hose lay needs at least two points');
+  }
+}
+function cancelHoseDraft() { cleanupHoseDraft(); }
+function cleanupHoseDraft() {
+  if (hoseDraft.preview) hoseDraft.preview.remove();
+  hoseDraft.verts.forEach((v) => v.remove());
+  hoseDraft.active = false;
+  hoseDraft.pts = [];
+  hoseDraft.verts = [];
+  hoseDraft.preview = null;
+  if (map.doubleClickZoom) map.doubleClickZoom.enable();
+  const hint = $('#hoseHint');
+  if (hint) hint.hidden = true;
+}
+
+$('#hoseUndo').addEventListener('click', undoHoseVertex);
+$('#hoseFinish').addEventListener('click', finishHoseDraft);
+$('#hoseCancel').addEventListener('click', () => setTool('pan'));
 
 /* build unit palette (tabbed by scenario type) */
 function buildPalette() {
@@ -1354,7 +1408,7 @@ const TOUR_STEPS = [
   { sel: '[data-tool="unit:engine"]', title: '6 · Assign resources',
     text: 'Tap a unit type, then tap the map to place it. Drag to move; tap one to rename it, add notes, set it Working, or remove it. The tabs switch between Wildland, Structure and EMS kits — including 🏠🔥 structure fires, 🚰 hydrants, 🛢️ drop tanks, 🤕 patients and LZs.' },
   { sel: '[data-tool="line"]', title: '7 · Go defensive',
-    text: 'Fire line paints a fuel break, the 🚜 dozer cuts line as you drag it, the ✈️ tanker drops retardant — and the 🪢 Hose tool draws a hose lay with live length and friction loss.' },
+    text: 'Fire line paints a fuel break, the 🚜 dozer cuts line as you drag it, the ✈️ tanker drops retardant — and the 🪢 Hose tool lays hose: tap points along the route (pan freely between taps), Finish, then tap the lay for length & friction loss.' },
   { sel: '#menuBtn', title: '8 · Scenarios & more',
     text: 'Save and share scenarios, paint fuels, see the legend — or run this tour again any time.',
     cta: 'Finish' },

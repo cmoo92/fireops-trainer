@@ -157,6 +157,21 @@ html, body {
 }
 .pal-tab.active { background: var(--accent); color: #fff; border-color: var(--accent2); }
 
+/* hose drawing helper */
+#hoseHint {
+  position: fixed; left: 50%; transform: translateX(-50%);
+  bottom: calc(var(--bar-h) + 26px + env(safe-area-inset-bottom));
+  z-index: 1400;
+  background: rgba(12, 16, 20, .95);
+  border: 1px solid #ffd23f; border-radius: 14px;
+  padding: 10px 12px; display: flex; flex-direction: column; gap: 8px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, .6);
+  max-width: calc(100vw - 20px);
+}
+#hoseHintText { color: #ffd23f; font-size: 14px; font-weight: 600; text-align: center; }
+.hose-hint-btns { display: flex; gap: 8px; justify-content: center; }
+.hose-hint-btns .btn { min-height: 42px; }
+
 /* hose */
 .hose-label {
   transform: translate(-50%, -50%);

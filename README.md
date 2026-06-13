@@ -66,12 +66,15 @@ The unit bar has **Wildland / Structure / EMS** tabs.
 - **🏠🔥 Str. fire** — place it on a building; it progresses *smoke showing → working
   fire → fully involved → burned out* on the scenario clock. Park units with
   **Working** enabled next to it to knock it down (one engine ≈ 3 sim-minutes).
-  Fully involved buildings throw embers into surrounding fuels, downwind-biased.
+  Fully involved buildings throw embers into surrounding fuels, downwind-biased —
+  toggle **Cast embers into wildland fuels** off in the unit's popup for a pure
+  structure drill that won't kick off a brush fire.
 - **🏠 Exposure** — a plain structure that converts to a structure fire if the
   wildland fire reaches it (WUI drills).
-- **🪢 Hose tool** — drag along the route of a lay; it shows live length in feet.
-  Tap the lay to set diameter (1¾″–5″) and GPM — it computes friction loss with the
-  standard `C·(Q/100)²·(L/100)` coefficients. Supply lines draw yellow, attack lines red.
+- **🪢 Hose tool** — tap points along the route of a lay (pan & zoom stay live
+  between taps), then **Finish**; it shows live length in feet. Tap the lay to set
+  diameter (1¾″–5″) and GPM — it computes friction loss with the standard
+  `C·(Q/100)²·(L/100)` coefficients. Supply lines draw yellow, attack lines red.
 - **🚰 Hydrant, 🛢️ Drop tank, 💧 Water source, 🚩 Staging** — placeable water/ops
   points for tender-shuttle and relay planning.
 
