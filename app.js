@@ -80,14 +80,52 @@ const SVG_ICONS = {
       <circle cx="36" cy="23" r="1.5" fill="#6b7178"/>
     </g>
   </svg>`,
+  dozer: `<svg viewBox="0 0 50 32" xmlns="http://www.w3.org/2000/svg">
+    <g stroke="#5a4708" stroke-width="1.1" stroke-linejoin="round">
+      <path d="M14 29 H40 Q44 29 44 25 L44 23.5 L20 23.5 L12.5 17 Q10 17.5 10 21 L10 25 Q10 29 14 29 Z" fill="#41464b"/>
+      <g fill="#1b1e21" stroke="#000" stroke-width="0.5">
+        <circle cx="15" cy="25.5" r="2"/>
+        <circle cx="21" cy="26" r="2"/>
+        <circle cx="27" cy="26" r="2"/>
+        <circle cx="33" cy="26" r="2"/>
+        <circle cx="40" cy="24.5" r="3"/>
+        <circle cx="12.5" cy="20" r="2.4"/>
+      </g>
+      <rect x="22" y="13" width="16" height="9" rx="1.5" fill="#f2b62e"/>
+      <path d="M30 5 H39 V13 H30 Z" fill="#f2b62e"/>
+      <rect x="31.5" y="6.5" width="6" height="5" fill="#3a3f44" stroke="#2b2f33" stroke-width="0.6"/>
+      <rect x="24" y="7.5" width="2" height="5.5" fill="#2b2f33"/>
+      <rect x="7" y="20.4" width="16" height="2.2" rx="1" fill="#2b2f33"/>
+      <path d="M4 12.5 Q2 12.5 2 14.5 L2 27 Q2 29 4.5 29 L7.5 27.5 L7.5 14 Q7.5 12.5 5.5 12.5 Z" fill="#e0a020"/>
+    </g>
+  </svg>`,
+  brush: `<svg viewBox="0 0 48 28" xmlns="http://www.w3.org/2000/svg">
+    <g stroke="#6f1d18" stroke-width="1.1" stroke-linejoin="round">
+      <rect x="4" y="18.5" width="40" height="3" rx="1" fill="#2b2f33"/>
+      <rect x="3.5" y="11" width="22" height="9" rx="1.5" fill="#e0473b"/>
+      <rect x="6" y="7.5" width="13" height="6" rx="1.5" fill="#cdd2d6"/>
+      <circle cx="22" cy="12" r="2.6" fill="#3a3f44"/>
+      <circle cx="22" cy="12" r="1" fill="#9aa0a6" stroke="none"/>
+      <path d="M25.5 8.5 H35 L38.5 13 V20 H25.5 Z" fill="#e0473b"/>
+      <rect x="38.5" y="14.5" width="5" height="5.5" fill="#cf3b30"/>
+      <rect x="43" y="13.5" width="1.8" height="7.5" rx="0.6" fill="#9aa0a6"/>
+      <path d="M27 10 H34 L36.4 13 H27 Z" fill="#bfe3f5" stroke="#1f6f9e" stroke-width="0.6"/>
+      <g stroke="#000" stroke-width="0.5">
+        <circle cx="13" cy="21" r="4.2" fill="#1f2226"/>
+        <circle cx="13" cy="21" r="1.7" fill="#6b7178"/>
+        <circle cx="35" cy="21" r="4.2" fill="#1f2226"/>
+        <circle cx="35" cy="21" r="1.7" fill="#6b7178"/>
+      </g>
+    </g>
+  </svg>`,
 };
 
 const UNIT_TYPES = {
   engine:    { emoji: '🚒', label: 'Engine',    prefix: 'E',   sup: { r: 20, p: 0.50 }, cats: ['wild', 'struct', 'ems'] },
   ladder:    { emoji: '🪜', label: 'Ladder',    prefix: 'L',   sup: { r: 25, p: 0.55 }, cats: ['struct'] },
-  brush:     { emoji: '🛻', label: 'Brush',     prefix: 'BR',  sup: { r: 15, p: 0.45 }, cats: ['wild'] },
+  brush:     { svg: SVG_ICONS.brush, label: 'Brush',  prefix: 'BR',  sup: { r: 15, p: 0.45 }, cats: ['wild'] },
   tender:    { svg: SVG_ICONS.tender, label: 'Tender',  prefix: 'T',   sup: { r: 12, p: 0.30 }, cats: ['wild', 'struct'] },
-  dozer:     { emoji: '🚜', label: 'Dozer',     prefix: 'DZ',  line: true,              cats: ['wild'] },
+  dozer:     { svg: SVG_ICONS.dozer, label: 'Dozer',  prefix: 'DZ',  line: true,           cats: ['wild'] },
   crew:      { emoji: '👷', label: 'Crew',      prefix: 'C',   sup: { r: 10, p: 0.35 }, cats: ['wild', 'struct'] },
   helo:      { emoji: '🚁', label: 'Helo',      prefix: 'H',   sup: { r: 28, p: 0.65 }, cats: ['wild', 'ems'] },
   tanker:    { emoji: '✈️', label: 'Tanker',    prefix: 'AT',  drop: true,              cats: ['wild'] },
