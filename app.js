@@ -65,13 +65,28 @@ const SVG_ICONS = {
       <ellipse cx="14.5" cy="12.8" rx="5.4" ry="2.2" fill="#9fd6f0" stroke="none" opacity="0.75"/>
     </g>
   </svg>`,
+  tender: `<svg viewBox="0 0 48 28" xmlns="http://www.w3.org/2000/svg">
+    <g stroke="#2b3138" stroke-width="1.1" stroke-linejoin="round">
+      <rect x="4" y="20" width="40" height="3" rx="1" fill="#2b3138"/>
+      <rect x="2.5" y="6.5" width="28" height="14" rx="7" fill="#d2d7db"/>
+      <ellipse cx="3.6" cy="13.5" rx="2.5" ry="7" fill="#bcc2c7"/>
+      <line x1="7" y1="13.5" x2="29" y2="13.5" stroke="#a9afb4" stroke-width="0.8"/>
+      <path d="M16.5 8.6 C 20 12.5, 19 16, 16.5 16 C 14 16, 13 12.5, 16.5 8.6 Z" fill="#2f9bd8" stroke="#1f6f9e" stroke-width="0.7"/>
+      <path d="M30.5 8 H39 l5.5 5.5 V20 H30.5 Z" fill="#e0473b"/>
+      <path d="M38.4 9.6 h2.8 l2.6 3.1 h-5.4 Z" fill="#bfe3f5" stroke="#1f6f9e" stroke-width="0.6"/>
+      <circle cx="12" cy="23" r="3.6" fill="#23282d"/>
+      <circle cx="12" cy="23" r="1.5" fill="#6b7178"/>
+      <circle cx="36" cy="23" r="3.6" fill="#23282d"/>
+      <circle cx="36" cy="23" r="1.5" fill="#6b7178"/>
+    </g>
+  </svg>`,
 };
 
 const UNIT_TYPES = {
   engine:    { emoji: '🚒', label: 'Engine',    prefix: 'E',   sup: { r: 20, p: 0.50 }, cats: ['wild', 'struct', 'ems'] },
   ladder:    { emoji: '🪜', label: 'Ladder',    prefix: 'L',   sup: { r: 25, p: 0.55 }, cats: ['struct'] },
   brush:     { emoji: '🛻', label: 'Brush',     prefix: 'BR',  sup: { r: 15, p: 0.45 }, cats: ['wild'] },
-  tender:    { emoji: '🚛', label: 'Tender',    prefix: 'T',   sup: { r: 12, p: 0.30 }, cats: ['wild', 'struct'] },
+  tender:    { svg: SVG_ICONS.tender, label: 'Tender',  prefix: 'T',   sup: { r: 12, p: 0.30 }, cats: ['wild', 'struct'] },
   dozer:     { emoji: '🚜', label: 'Dozer',     prefix: 'DZ',  line: true,              cats: ['wild'] },
   crew:      { emoji: '👷', label: 'Crew',      prefix: 'C',   sup: { r: 10, p: 0.35 }, cats: ['wild', 'struct'] },
   helo:      { emoji: '🚁', label: 'Helo',      prefix: 'H',   sup: { r: 28, p: 0.65 }, cats: ['wild', 'ems'] },
