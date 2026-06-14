@@ -80,9 +80,10 @@ The unit bar has **Wildland / Structure / EMS** tabs.
 
 ## EMS calls
 
-🤕 Patients, 🧍 victims, LZ (landing-zone) markers, staging and medic units — every
-unit takes free-text **notes** (tap it), so you can script "62M, chest pain, 2nd
-floor" and run the call against the scenario clock.
+🤕 Patients, 🧍 victims, LZ (landing-zone) markers, staging, medic, engine, 🚓 police
+and a helo — every unit takes free-text **notes** (tap it), so you can script "62M,
+chest pain, 2nd floor" and run the call against the scenario clock. Police can be
+placed on wildland and structure-fire calls too (traffic, evac, scene security).
 
 ## Scenarios
 

@@ -199,6 +199,12 @@ html, body {
 .unit-emoji { position: relative; }
 .sf-badge { position: absolute; right: -10px; top: -8px; font-size: 16px; }
 
+/* SVG unit icons (hydrant, drop tank…) */
+.unit-svg { line-height: 0; filter: drop-shadow(0 2px 3px rgba(0,0,0,.9)); }
+.unit-svg svg { height: 30px; width: auto; display: block; }
+.pal-svg { display: inline-flex; align-items: center; justify-content: center; height: 24px; }
+.pal-svg svg { height: 24px; width: auto; display: block; }
+
 /* unit popup extras */
 .unit-notes {
   background: #0b0e12; color: var(--fg); border: 1px solid #00000088;

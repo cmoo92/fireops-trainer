@@ -38,8 +38,37 @@ const NEIGH = [
   [1, 1], [1, -1], [-1, 1], [-1, -1],
 ];
 
+/* hand-drawn SVG icons for gear that has no good emoji */
+const SVG_ICONS = {
+  hydrant: `<svg viewBox="0 0 32 40" xmlns="http://www.w3.org/2000/svg">
+    <g stroke="#6f1d18" stroke-width="1.1" stroke-linejoin="round">
+      <path d="M6 38 L9 32 H23 L26 38 Z" fill="#b8332a"/>
+      <rect x="10.5" y="13" width="11" height="20" rx="4.5" fill="#e0473b"/>
+      <rect x="3" y="20" width="8.5" height="6" rx="3" fill="#cf3b30"/>
+      <rect x="20.5" y="20" width="8.5" height="6" rx="3" fill="#cf3b30"/>
+      <circle cx="4.6" cy="23" r="2.5" fill="#ecc94b"/>
+      <circle cx="27.4" cy="23" r="2.5" fill="#ecc94b"/>
+      <path d="M9.5 14 Q16 5 22.5 14 Z" fill="#e0473b"/>
+      <circle cx="16" cy="23" r="3.7" fill="#ecc94b"/>
+      <circle cx="16" cy="23" r="1.5" fill="#b8932f"/>
+      <rect x="14.4" y="6.5" width="3.2" height="4.5" fill="#cf3b30"/>
+      <polygon points="16,2.5 19.2,4.6 18,8 14,8 12.8,4.6" fill="#cf3b30"/>
+    </g>
+  </svg>`,
+  droptank: `<svg viewBox="0 0 40 30" xmlns="http://www.w3.org/2000/svg">
+    <g stroke="#2b333b" stroke-width="1.1">
+      <rect x="2" y="11" width="2.6" height="9" rx="1" fill="#5b6772"/>
+      <rect x="35.4" y="11" width="2.6" height="9" rx="1" fill="#5b6772"/>
+      <ellipse cx="20" cy="17" rx="18" ry="10" fill="#46525f"/>
+      <ellipse cx="20" cy="15.6" rx="16" ry="8.3" fill="#1f5f86" stroke="none"/>
+      <ellipse cx="20" cy="15" rx="14.5" ry="7.1" fill="#2f9bd8" stroke="none"/>
+      <ellipse cx="14.5" cy="12.8" rx="5.4" ry="2.2" fill="#9fd6f0" stroke="none" opacity="0.75"/>
+    </g>
+  </svg>`,
+};
+
 const UNIT_TYPES = {
-  engine:    { emoji: '🚒', label: 'Engine',    prefix: 'E',   sup: { r: 20, p: 0.50 }, cats: ['wild', 'struct'] },
+  engine:    { emoji: '🚒', label: 'Engine',    prefix: 'E',   sup: { r: 20, p: 0.50 }, cats: ['wild', 'struct', 'ems'] },
   ladder:    { emoji: '🪜', label: 'Ladder',    prefix: 'L',   sup: { r: 25, p: 0.55 }, cats: ['struct'] },
   brush:     { emoji: '🛻', label: 'Brush',     prefix: 'BR',  sup: { r: 15, p: 0.45 }, cats: ['wild'] },
   tender:    { emoji: '🚛', label: 'Tender',    prefix: 'T',   sup: { r: 12, p: 0.30 }, cats: ['wild', 'struct'] },
@@ -48,10 +77,11 @@ const UNIT_TYPES = {
   helo:      { emoji: '🚁', label: 'Helo',      prefix: 'H',   sup: { r: 28, p: 0.65 }, cats: ['wild', 'ems'] },
   tanker:    { emoji: '✈️', label: 'Tanker',    prefix: 'AT',  drop: true,              cats: ['wild'] },
   medic:     { emoji: '🚑', label: 'Medic',     prefix: 'M',                            cats: ['struct', 'ems'] },
+  police:    { emoji: '🚓', label: 'Police',    prefix: 'PD',                           cats: ['wild', 'struct', 'ems'] },
   command:   { emoji: '⛺', label: 'ICP',       prefix: 'IC',                           cats: ['wild', 'struct', 'ems'] },
   sfire:     { emoji: '🏠🔥', label: 'Str. fire', prefix: 'SF', sfire: true,            cats: ['struct'] },
-  hydrant:   { emoji: '🚰', label: 'Hydrant',   prefix: 'HYD',                          cats: ['struct'] },
-  droptank:  { emoji: '🛢️', label: 'Drop tank', prefix: 'DT',                           cats: ['struct'] },
+  hydrant:   { svg: SVG_ICONS.hydrant,  label: 'Hydrant',   prefix: 'HYD',              cats: ['struct'] },
+  droptank:  { svg: SVG_ICONS.droptank, label: 'Drop tank', prefix: 'DT',               cats: ['struct'] },
   water:     { emoji: '💧', label: 'Water src', prefix: 'W',                            cats: ['wild', 'struct'] },
   structure: { emoji: '🏠', label: 'Exposure',  prefix: 'S',                            cats: ['wild', 'struct'] },
   victim:    { emoji: '🧍', label: 'Victim',    prefix: 'V',                            cats: ['wild', 'ems'] },
@@ -691,6 +721,8 @@ function unitIcon(u) {
   let face, tag = u.name;
   if (def.badge) {
     face = `<div class="lz-badge">${def.badge}</div>`;
+  } else if (def.svg) {
+    face = `<div class="unit-svg">${def.svg}</div>`;
   } else if (def.sfire) {
     const st = SF_STAGES[u.sf.stage];
     face = `<div class="unit-emoji">${st.i}<span class="sf-badge">${st.b}</span></div>`;
@@ -1078,7 +1110,9 @@ function buildPalette() {
     b.className = 'tool';
     b.dataset.tool = 'unit:' + t;
     b.title = 'Place ' + def.label;
-    const face = def.badge ? `<span class="lz-mini">${def.badge}</span>` : def.emoji;
+    const face = def.badge ? `<span class="lz-mini">${def.badge}</span>`
+      : def.svg ? `<span class="pal-svg">${def.svg}</span>`
+      : def.emoji;
     b.innerHTML = `${face}<span>${def.label}</span>`;
     b.addEventListener('click', () => setTool(tool === 'unit:' + t ? 'pan' : 'unit:' + t));
     pal.appendChild(b);
