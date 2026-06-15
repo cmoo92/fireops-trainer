@@ -443,6 +443,32 @@ function parseKey(k) {
   return [+k.slice(0, c), +k.slice(c + 1)];
 }
 
+/* Coarse spatial index over the fire cells so a redraw only visits cells
+   near the viewport instead of iterating the entire (possibly 100k+) fire.
+   Without this, erasing/dragging stutters because redrawFire runs every
+   frame and its cost scaled with total fire size. */
+const BUCKET = 48;                  // cells per bucket side
+const cellBuckets = new Map();      // "bi,bj" -> Set<cellKey>
+function _bk(i, j) { return Math.floor(i / BUCKET) + ',' + Math.floor(j / BUCKET); }
+function cellSet(k, data) {
+  if (!cells.has(k)) {
+    const [i, j] = parseKey(k);
+    const b = _bk(i, j);
+    let s = cellBuckets.get(b);
+    if (!s) { s = new Set(); cellBuckets.set(b, s); }
+    s.add(k);
+  }
+  cells.set(k, data);
+}
+function cellDelete(k) {
+  if (!cells.has(k)) return;
+  cells.delete(k);
+  const [i, j] = parseKey(k);
+  const s = cellBuckets.get(_bk(i, j));
+  if (s) { s.delete(k); if (!s.size) cellBuckets.delete(_bk(i, j)); }
+}
+function cellsClear() { cellBuckets.clear(); cells.clear() }
+
 function fuelAt(k) {
   const m = mods.get(k);
   if (!m) return 'grass';
@@ -510,13 +536,22 @@ function redrawFire() {
     if (!inView(i, j)) continue;
     drawCell(i, j, 'rgba(93, 177, 255, 0.30)');
   }
-  // burned, then burning on top
+  // burned, then burning on top — visit only buckets overlapping the view
   const flames = [];
-  for (const [k, c] of cells) {
-    const [i, j] = parseKey(k);
-    if (!inView(i, j)) continue;
-    if (c.s === 2) drawCell(i, j, 'rgba(28, 23, 20, 0.78)');
-    else flames.push([i, j, c]);
+  const bi0 = Math.floor(i0 / BUCKET), bi1 = Math.floor(i1 / BUCKET);
+  const bj0 = Math.floor(j0 / BUCKET), bj1 = Math.floor(j1 / BUCKET);
+  for (let bi = bi0; bi <= bi1; bi++) {
+    for (let bj = bj0; bj <= bj1; bj++) {
+      const set = cellBuckets.get(bi + ',' + bj);
+      if (!set) continue;
+      for (const k of set) {
+        const [i, j] = parseKey(k);
+        if (!inView(i, j)) continue;
+        const c = cells.get(k);
+        if (c.s === 2) drawCell(i, j, 'rgba(28, 23, 20, 0.78)');
+        else flames.push([i, j, c]);
+      }
+    }
   }
   for (const [i, j, c] of flames) {
     const heat = clamp(c.t / c.t0, 0, 1);            // 1 fresh -> 0 dying
@@ -654,7 +689,7 @@ function tick() {
     for (const [nk, fuel] of ignitions) {
       if (cells.has(nk)) continue;
       const dur = BURN_TICKS[fuel] + ((Math.random() * 3) | 0);
-      cells.set(nk, { s: 1, t: dur, t0: dur });
+      cellSet(nk, { s: 1, t: dur, t0: dur });
       burning.add(nk);
     }
   }
@@ -770,7 +805,7 @@ function sfireTick(u) {
     const fuel = fuelAt(k);
     if (!cells.has(k) && fuel) {
       const dur = BURN_TICKS[fuel] + ((Math.random() * 3) | 0);
-      cells.set(k, { s: 1, t: dur, t0: dur });
+      cellSet(k, { s: 1, t: dur, t0: dur });
       burning.add(k);
     }
   }
@@ -796,11 +831,13 @@ function updateStats() {
 /* ------------------------------ frame loop ------------------------------ */
 
 let lastTs = 0;
+function flushFire() { if (needsRedraw) { redrawFire(); needsRedraw = false; } }
+
 function frame(ts) {
   const dt = Math.min((ts - lastTs) / 1000, 0.1);
   lastTs = ts;
   pinCanvases();
-  if (needsRedraw) { redrawFire(); needsRedraw = false; }
+  flushFire();
   updateSmoke(dt);
   drawSmoke();
   requestAnimationFrame(frame);
@@ -850,10 +887,10 @@ function paintAt(latlng) {
         const fuel = fuelAt(k);
         if (!fuel) continue;
         const dur = BURN_TICKS[fuel] + ((Math.random() * 3) | 0);
-        cells.set(k, { s: 1, t: dur, t0: dur });
+        cellSet(k, { s: 1, t: dur, t0: dur });
         burning.add(k);
       } else if (tool === 'extinguish') {
-        cells.delete(k);
+        cellDelete(k);
         burning.delete(k);
       } else if (tool === 'line') {
         mods.set(k, { f: 'break' });
@@ -881,9 +918,14 @@ mapEl.addEventListener('pointerdown', (e) => {
   painting = true;
   mapEl.setPointerCapture(e.pointerId);
   paintAt(evToLatLng(e));
+  flushFire();
   e.preventDefault();
 });
-mapEl.addEventListener('pointermove', (e) => { if (painting) paintAt(evToLatLng(e)); });
+mapEl.addEventListener('pointermove', (e) => {
+  if (!painting) return;
+  paintAt(evToLatLng(e));
+  flushFire();   // redraw in this event, not next frame, so paint tracks the cursor
+});
 ['pointerup', 'pointercancel'].forEach((ev) =>
   mapEl.addEventListener(ev, () => { painting = false; })
 );
@@ -1381,7 +1423,7 @@ $('#speedBtn').addEventListener('click', () => {
 });
 
 $('#resetFireBtn').addEventListener('click', () => {
-  cells.clear(); burning.clear(); wet.clear();
+  cellsClear(); burning.clear(); wet.clear();
   particles.length = 0;
   simTime = 0;
   running = false;
@@ -1417,7 +1459,7 @@ function serialize() {
 
 function loadScenario(d) {
   // wipe
-  cells.clear(); burning.clear(); mods.clear(); wet.clear();
+  cellsClear(); burning.clear(); mods.clear(); wet.clear();
   particles.length = 0;
   [...units].forEach(removeUnit);
   [...hoses].forEach(removeHose);
@@ -1435,7 +1477,7 @@ function loadScenario(d) {
   lastScenarioName = d.name || '';
 
   for (const [k, s, t, t0] of d.cells || []) {
-    cells.set(k, { s, t, t0 });
+    cellSet(k, { s, t, t0 });
     if (s === 1) burning.add(k);
   }
   for (const [k, f] of d.mods || []) mods.set(k, { f });
@@ -1568,7 +1610,7 @@ $('#cellSizeSel').addEventListener('change', (e) => {
       return;
     }
   }
-  cells.clear(); burning.clear(); mods.clear(); wet.clear();
+  cellsClear(); burning.clear(); mods.clear(); wet.clear();
   particles.length = 0;
   CELL = v;
   origin = null;
@@ -1585,7 +1627,7 @@ $('#clearUnitsBtn').addEventListener('click', () => {
 
 $('#clearAllBtn').addEventListener('click', () => {
   if (!confirm('Clear fire, lines, fuels, hoses AND units?')) return;
-  cells.clear(); burning.clear(); mods.clear(); wet.clear();
+  cellsClear(); burning.clear(); mods.clear(); wet.clear();
   particles.length = 0;
   [...units].forEach(removeUnit);
   [...hoses].forEach(removeHose);
