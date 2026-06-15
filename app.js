@@ -38,110 +38,240 @@ const NEIGH = [
   [1, 1], [1, -1], [-1, 1], [-1, -1],
 ];
 
-/* hand-drawn SVG icons for gear that has no good emoji */
+/* ===========================================================================
+   Unit icon kit — one flat-vector style for every resource:
+   near-black outline (#23282d), shared fire/EMS palette, vehicles in
+   side profile facing left, rendered at a common height with a soft shadow.
+   =========================================================================== */
+const _OUT = 'stroke="#23282d" stroke-width="1.1" stroke-linejoin="round"';
+const _tire = (x, c) =>
+  `<circle cx="${x}" cy="${c}" r="3.7" fill="#1f2226" stroke="#000" stroke-width="0.5"/>` +
+  `<circle cx="${x}" cy="${c}" r="1.5" fill="#6b7178" stroke="none"/>`;
+const _bldg = (wall, roof) =>
+  `<path d="M3.5 15 L17 5 L30.5 15 Z" fill="${roof}"/>` +
+  `<rect x="6" y="15" width="22" height="14" fill="${wall}"/>` +
+  `<rect x="14.6" y="21" width="5.4" height="8" fill="#6f4a22"/>` +
+  `<rect x="8.6" y="17.4" width="4.2" height="3.6" fill="#bfe3f5"/>` +
+  `<rect x="21.2" y="17.4" width="4.2" height="3.6" fill="#bfe3f5"/>`;
+const _flame = (x, y, s) =>
+  `<path d="M${x} ${y} C ${x + 2.6 * s} ${y - 2.4 * s} ${x + 1.5 * s} ${y - 5 * s} ${x} ${y - 7 * s} C ${x - 1.5 * s} ${y - 5 * s} ${x - 2.6 * s} ${y - 2.4 * s} ${x} ${y} Z" fill="#f2772a" stroke="none"/>` +
+  `<path d="M${x} ${y - 0.4 * s} C ${x + 1.4 * s} ${y - 1.8 * s} ${x + 0.9 * s} ${y - 3.2 * s} ${x} ${y - 4.4 * s} C ${x - 0.9 * s} ${y - 3.2 * s} ${x - 1.4 * s} ${y - 1.8 * s} ${x} ${y - 0.4 * s} Z" fill="#ffd23f" stroke="none"/>`;
+const _smoke = (x, y, r, t) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${t}" stroke="none" opacity="0.85"/>`;
+
 const SVG_ICONS = {
-  hydrant: `<svg viewBox="0 0 32 40" xmlns="http://www.w3.org/2000/svg">
-    <g stroke="#6f1d18" stroke-width="1.1" stroke-linejoin="round">
-      <path d="M6 38 L9 32 H23 L26 38 Z" fill="#b8332a"/>
-      <rect x="10.5" y="13" width="11" height="20" rx="4.5" fill="#e0473b"/>
-      <rect x="3" y="20" width="8.5" height="6" rx="3" fill="#cf3b30"/>
-      <rect x="20.5" y="20" width="8.5" height="6" rx="3" fill="#cf3b30"/>
-      <circle cx="4.6" cy="23" r="2.5" fill="#ecc94b"/>
-      <circle cx="27.4" cy="23" r="2.5" fill="#ecc94b"/>
-      <path d="M9.5 14 Q16 5 22.5 14 Z" fill="#e0473b"/>
-      <circle cx="16" cy="23" r="3.7" fill="#ecc94b"/>
-      <circle cx="16" cy="23" r="1.5" fill="#b8932f"/>
-      <rect x="14.4" y="6.5" width="3.2" height="4.5" fill="#cf3b30"/>
-      <polygon points="16,2.5 19.2,4.6 18,8 14,8 12.8,4.6" fill="#cf3b30"/>
+  engine: `<svg viewBox="0 0 50 28" xmlns="http://www.w3.org/2000/svg"><g ${_OUT}>
+    <rect x="3" y="19" width="44" height="3.2" rx="1" fill="#23282d"/>
+    <rect x="13" y="8.5" width="33" height="11.5" rx="1.5" fill="#d23b30"/>
+    <path d="M2.5 11 Q2.5 8.5 5 8.5 H14.5 V20 H2.5 Z" fill="#e0473b"/>
+    <rect x="4" y="10.4" width="6.6" height="4.2" rx="0.8" fill="#bfe3f5"/>
+    <rect x="13" y="15.4" width="33" height="2.4" fill="#eef1f3"/>
+    <rect x="24" y="10.4" width="12" height="5.2" rx="0.6" fill="#aeb4b9"/>
+    <g fill="#8b9197" stroke="#23282d" stroke-width="0.5"><rect x="25.2" y="11.3" width="3.4" height="3.4" rx="0.4"/><rect x="30.4" y="11.3" width="3.4" height="3.4" rx="0.4"/></g>
+    <rect x="4.8" y="6.2" width="6.4" height="2.5" rx="0.8" fill="#ecc94b"/>
+    ${_tire(12, 22)}${_tire(38, 22)}
+  </g></svg>`,
+  ladder: `<svg viewBox="0 0 56 30" xmlns="http://www.w3.org/2000/svg"><g ${_OUT}>
+    <rect x="3" y="21" width="50" height="3.2" rx="1" fill="#23282d"/>
+    <rect x="15" y="11" width="38" height="11" rx="1.5" fill="#d23b30"/>
+    <path d="M2.5 13 Q2.5 11 5 11 H16.5 V22 H2.5 Z" fill="#e0473b"/>
+    <rect x="4" y="12.6" width="6.6" height="4" rx="0.8" fill="#bfe3f5"/>
+    <rect x="15" y="17.4" width="38" height="2.2" fill="#eef1f3"/>
+    <rect x="30" y="9.4" width="6" height="3" rx="1" fill="#9aa0a6"/>
+    <g stroke="#b8bdc2" stroke-width="1.5" stroke-linecap="round"><line x1="33" y1="10.4" x2="7" y2="4.4"/><line x1="33" y1="12.6" x2="7" y2="6.6"/></g>
+    <g stroke="#cfd4d8" stroke-width="0.8"><line x1="30" y1="9.7" x2="30.7" y2="11.9"/><line x1="26" y1="8.8" x2="26.7" y2="11"/><line x1="22" y1="7.9" x2="22.7" y2="10.1"/><line x1="18" y1="7" x2="18.7" y2="9.2"/><line x1="14" y1="6.1" x2="14.7" y2="8.3"/><line x1="10" y1="5.2" x2="10.7" y2="7.4"/></g>
+    ${_tire(12, 24)}${_tire(40, 24)}${_tire(47.5, 24)}
+  </g></svg>`,
+  brush: `<svg viewBox="0 0 48 28" xmlns="http://www.w3.org/2000/svg"><g ${_OUT} transform="translate(48,0) scale(-1,1)">
+    <rect x="4" y="18.5" width="40" height="3" rx="1" fill="#23282d"/>
+    <rect x="3.5" y="11" width="22" height="9" rx="1.5" fill="#e0473b"/>
+    <rect x="6" y="7.5" width="13" height="6" rx="1.5" fill="#cdd2d6"/>
+    <circle cx="22" cy="12" r="2.6" fill="#3a3f44"/>
+    <circle cx="22" cy="12" r="1" fill="#9aa0a6" stroke="none"/>
+    <path d="M25.5 8.5 H35 L38.5 13 V20 H25.5 Z" fill="#e0473b"/>
+    <rect x="38.5" y="14.5" width="5" height="5.5" fill="#cf3b30"/>
+    <rect x="43" y="13.5" width="1.8" height="7.5" rx="0.6" fill="#9aa0a6"/>
+    <path d="M27 10 H34 L36.4 13 H27 Z" fill="#bfe3f5" stroke="#1f6f9e" stroke-width="0.6"/>
+    <g transform="translate(48,0) scale(-1,1)">${_tire(35, 21)}${_tire(13, 21)}</g>
+  </g></svg>`,
+  tender: `<svg viewBox="0 0 48 28" xmlns="http://www.w3.org/2000/svg"><g ${_OUT} transform="translate(48,0) scale(-1,1)">
+    <rect x="4" y="20" width="40" height="3" rx="1" fill="#23282d"/>
+    <rect x="2.5" y="6.5" width="28" height="14" rx="7" fill="#d2d7db"/>
+    <ellipse cx="3.6" cy="13.5" rx="2.5" ry="7" fill="#bcc2c7"/>
+    <line x1="7" y1="13.5" x2="29" y2="13.5" stroke="#a9afb4" stroke-width="0.8"/>
+    <path d="M16.5 8.6 C 20 12.5, 19 16, 16.5 16 C 14 16, 13 12.5, 16.5 8.6 Z" fill="#2f9bd8" stroke="#1f6f9e" stroke-width="0.7"/>
+    <path d="M30.5 8 H39 l5.5 5.5 V20 H30.5 Z" fill="#e0473b"/>
+    <path d="M38.4 9.6 h2.8 l2.6 3.1 h-5.4 Z" fill="#bfe3f5" stroke="#1f6f9e" stroke-width="0.6"/>
+    <g transform="translate(48,0) scale(-1,1)">${_tire(12, 23)}${_tire(36, 23)}</g>
+  </g></svg>`,
+  dozer: `<svg viewBox="0 0 50 32" xmlns="http://www.w3.org/2000/svg"><g ${_OUT}>
+    <path d="M14 29 H40 Q44 29 44 25 L44 23.5 L20 23.5 L12.5 17 Q10 17.5 10 21 L10 25 Q10 29 14 29 Z" fill="#41464b"/>
+    <g fill="#1b1e21" stroke="#000" stroke-width="0.5"><circle cx="15" cy="25.5" r="2"/><circle cx="21" cy="26" r="2"/><circle cx="27" cy="26" r="2"/><circle cx="33" cy="26" r="2"/><circle cx="40" cy="24.5" r="3"/><circle cx="12.5" cy="20" r="2.4"/></g>
+    <rect x="22" y="13" width="16" height="9" rx="1.5" fill="#f2b62e"/>
+    <path d="M30 5 H39 V13 H30 Z" fill="#f2b62e"/>
+    <rect x="31.5" y="6.5" width="6" height="5" fill="#3a3f44" stroke="#23282d" stroke-width="0.6"/>
+    <rect x="24" y="7.5" width="2" height="5.5" fill="#2b2f33"/>
+    <rect x="7" y="20.4" width="16" height="2.2" rx="1" fill="#2b2f33"/>
+    <path d="M4 12.5 Q2 12.5 2 14.5 L2 27 Q2 29 4.5 29 L7.5 27.5 L7.5 14 Q7.5 12.5 5.5 12.5 Z" fill="#e0a020"/>
+  </g></svg>`,
+  medic: `<svg viewBox="0 0 50 28" xmlns="http://www.w3.org/2000/svg"><g ${_OUT}>
+    <rect x="3" y="19" width="44" height="3.2" rx="1" fill="#23282d"/>
+    <rect x="13" y="6.5" width="33" height="13.5" rx="1.5" fill="#eef1f3"/>
+    <path d="M2.5 11 Q2.5 8.5 5 8.5 H14 V20 H2.5 Z" fill="#eef1f3"/>
+    <rect x="4" y="10" width="6.6" height="4.4" rx="0.8" fill="#bfe3f5"/>
+    <rect x="13" y="14.6" width="33" height="2.6" fill="#e0473b"/>
+    <g fill="#e0473b" stroke="none"><rect x="26" y="8.6" width="8" height="3" rx="0.4"/><rect x="28.5" y="6.1" width="3" height="8" rx="0.4"/></g>
+    <rect x="4.6" y="6.2" width="6.4" height="2.5" rx="0.8" fill="#e0473b"/>
+    ${_tire(12, 22)}${_tire(38, 22)}
+  </g></svg>`,
+  police: `<svg viewBox="0 0 48 26" xmlns="http://www.w3.org/2000/svg"><g ${_OUT}>
+    <rect x="3" y="17.5" width="42" height="3" rx="1" fill="#23282d"/>
+    <path d="M2.5 17.5 V14 Q2.5 12.5 4.5 12.5 L11.5 12.5 L15.5 7.8 H30.5 L35.5 12.6 L43 13 Q45 13.2 45 15 V17.5 Z" fill="#eef1f3"/>
+    <path d="M16 8.3 H29.8 L33.4 12.4 H12.6 Z" fill="#9fb4cf"/>
+    <path d="M2.6 15.2 H45 V17.5 H2.6 Z" fill="#27314a"/>
+    <rect x="19.5" y="5.9" width="8" height="2.3" rx="0.6" fill="#2f6fd0"/>
+    <rect x="19.5" y="5.9" width="4" height="2.3" rx="0.6" fill="#e0473b"/>
+    <circle cx="23.5" cy="14.7" r="2.3" fill="#2b3a5c" stroke="#eef1f3" stroke-width="0.6"/>
+    ${_tire(12, 20)}${_tire(35, 20)}
+  </g></svg>`,
+  helo: `<svg viewBox="0 0 54 30" xmlns="http://www.w3.org/2000/svg"><g ${_OUT}>
+    <path d="M24 15 H49 L49 17.5 H30 Z" fill="#d23b30"/>
+    <path d="M47 10.5 L51.5 11.5 L50 17 L47 16.5 Z" fill="#e0473b"/>
+    <ellipse cx="17" cy="16" rx="15" ry="8.2" fill="#e0473b"/>
+    <path d="M4.5 16 Q5 11 12.5 10 L13.5 18.5 Q7 18.5 4.5 16 Z" fill="#bfe3f5"/>
+    <rect x="16.5" y="6.3" width="2.2" height="3.4" fill="#3a3f44"/>
+    <rect x="1" y="5" width="36" height="2.2" rx="1.1" fill="#3a3f44"/>
+    <rect x="6" y="25.5" width="24" height="1.8" rx="0.9" fill="#9aa0a6"/>
+    <path d="M11 23.6 V25.6 M25 23.6 V25.6" stroke="#9aa0a6" stroke-width="1.6"/>
+  </g></svg>`,
+  tanker: `<svg viewBox="0 0 54 30" xmlns="http://www.w3.org/2000/svg"><g ${_OUT}>
+    <path d="M3 16 Q3 13.2 10 12.8 L45 13.2 Q51 13.6 51 16 Q51 18.4 45 18.8 L10 19.2 Q3 18.8 3 16 Z" fill="#eef1f3"/>
+    <path d="M4.5 14.6 Q4.5 13.6 7.5 13.4 L8.6 15.6 Q6 15.9 4.5 14.6 Z" fill="#bfe3f5"/>
+    <path d="M40 13.2 L46 6 L48 13.4 Z" fill="#d23b30"/>
+    <path d="M21 15.5 L30 7.5 L33.5 7.5 L27.5 15.6 Z" fill="#cdd2d6"/>
+    <rect x="9" y="17.3" width="32" height="2.1" rx="1" fill="#e0473b"/>
+    <ellipse cx="25" cy="16.6" rx="2.4" ry="1.9" fill="#9aa0a6"/>
+  </g></svg>`,
+  hydrant: `<svg viewBox="0 0 32 40" xmlns="http://www.w3.org/2000/svg"><g ${_OUT}>
+    <path d="M6 38 L9 32 H23 L26 38 Z" fill="#b8332a"/>
+    <rect x="10.5" y="13" width="11" height="20" rx="4.5" fill="#e0473b"/>
+    <rect x="3" y="20" width="8.5" height="6" rx="3" fill="#cf3b30"/>
+    <rect x="20.5" y="20" width="8.5" height="6" rx="3" fill="#cf3b30"/>
+    <circle cx="4.6" cy="23" r="2.5" fill="#ecc94b"/>
+    <circle cx="27.4" cy="23" r="2.5" fill="#ecc94b"/>
+    <path d="M9.5 14 Q16 5 22.5 14 Z" fill="#e0473b"/>
+    <circle cx="16" cy="23" r="3.7" fill="#ecc94b"/>
+    <circle cx="16" cy="23" r="1.5" fill="#b8932f"/>
+    <rect x="14.4" y="6.5" width="3.2" height="4.5" fill="#cf3b30"/>
+    <polygon points="16,2.5 19.2,4.6 18,8 14,8 12.8,4.6" fill="#cf3b30"/>
+  </g></svg>`,
+  droptank: `<svg viewBox="0 0 40 30" xmlns="http://www.w3.org/2000/svg"><g ${_OUT}>
+    <rect x="2" y="11" width="2.6" height="9" rx="1" fill="#5b6772"/>
+    <rect x="35.4" y="11" width="2.6" height="9" rx="1" fill="#5b6772"/>
+    <ellipse cx="20" cy="17" rx="18" ry="10" fill="#46525f"/>
+    <ellipse cx="20" cy="15.6" rx="16" ry="8.3" fill="#1f5f86" stroke="none"/>
+    <ellipse cx="20" cy="15" rx="14.5" ry="7.1" fill="#2f9bd8" stroke="none"/>
+    <ellipse cx="14.5" cy="12.8" rx="5.4" ry="2.2" fill="#9fd6f0" stroke="none" opacity="0.75"/>
+  </g></svg>`,
+  water: `<svg viewBox="0 0 30 28" xmlns="http://www.w3.org/2000/svg"><g ${_OUT}>
+    <rect x="3" y="6" width="24" height="19" rx="4" fill="#2f9bd8"/>
+    <g stroke="#eef1f3" stroke-width="1.8" fill="none" stroke-linecap="round">
+      <path d="M6.5 12 Q9 9.6 11.5 12 T16.5 12 T21.5 12"/>
+      <path d="M6.5 17 Q9 14.6 11.5 17 T16.5 17 T21.5 17"/>
+      <path d="M6.5 22 Q9 19.6 11.5 22 T16.5 22 T21.5 22"/>
     </g>
-  </svg>`,
-  droptank: `<svg viewBox="0 0 40 30" xmlns="http://www.w3.org/2000/svg">
-    <g stroke="#2b333b" stroke-width="1.1">
-      <rect x="2" y="11" width="2.6" height="9" rx="1" fill="#5b6772"/>
-      <rect x="35.4" y="11" width="2.6" height="9" rx="1" fill="#5b6772"/>
-      <ellipse cx="20" cy="17" rx="18" ry="10" fill="#46525f"/>
-      <ellipse cx="20" cy="15.6" rx="16" ry="8.3" fill="#1f5f86" stroke="none"/>
-      <ellipse cx="20" cy="15" rx="14.5" ry="7.1" fill="#2f9bd8" stroke="none"/>
-      <ellipse cx="14.5" cy="12.8" rx="5.4" ry="2.2" fill="#9fd6f0" stroke="none" opacity="0.75"/>
-    </g>
-  </svg>`,
-  tender: `<svg viewBox="0 0 48 28" xmlns="http://www.w3.org/2000/svg">
-    <g stroke="#2b3138" stroke-width="1.1" stroke-linejoin="round" transform="translate(48,0) scale(-1,1)">
-      <rect x="4" y="20" width="40" height="3" rx="1" fill="#2b3138"/>
-      <rect x="2.5" y="6.5" width="28" height="14" rx="7" fill="#d2d7db"/>
-      <ellipse cx="3.6" cy="13.5" rx="2.5" ry="7" fill="#bcc2c7"/>
-      <line x1="7" y1="13.5" x2="29" y2="13.5" stroke="#a9afb4" stroke-width="0.8"/>
-      <path d="M16.5 8.6 C 20 12.5, 19 16, 16.5 16 C 14 16, 13 12.5, 16.5 8.6 Z" fill="#2f9bd8" stroke="#1f6f9e" stroke-width="0.7"/>
-      <path d="M30.5 8 H39 l5.5 5.5 V20 H30.5 Z" fill="#e0473b"/>
-      <path d="M38.4 9.6 h2.8 l2.6 3.1 h-5.4 Z" fill="#bfe3f5" stroke="#1f6f9e" stroke-width="0.6"/>
-      <circle cx="12" cy="23" r="3.6" fill="#23282d"/>
-      <circle cx="12" cy="23" r="1.5" fill="#6b7178"/>
-      <circle cx="36" cy="23" r="3.6" fill="#23282d"/>
-      <circle cx="36" cy="23" r="1.5" fill="#6b7178"/>
-    </g>
-  </svg>`,
-  dozer: `<svg viewBox="0 0 50 32" xmlns="http://www.w3.org/2000/svg">
-    <g stroke="#5a4708" stroke-width="1.1" stroke-linejoin="round">
-      <path d="M14 29 H40 Q44 29 44 25 L44 23.5 L20 23.5 L12.5 17 Q10 17.5 10 21 L10 25 Q10 29 14 29 Z" fill="#41464b"/>
-      <g fill="#1b1e21" stroke="#000" stroke-width="0.5">
-        <circle cx="15" cy="25.5" r="2"/>
-        <circle cx="21" cy="26" r="2"/>
-        <circle cx="27" cy="26" r="2"/>
-        <circle cx="33" cy="26" r="2"/>
-        <circle cx="40" cy="24.5" r="3"/>
-        <circle cx="12.5" cy="20" r="2.4"/>
-      </g>
-      <rect x="22" y="13" width="16" height="9" rx="1.5" fill="#f2b62e"/>
-      <path d="M30 5 H39 V13 H30 Z" fill="#f2b62e"/>
-      <rect x="31.5" y="6.5" width="6" height="5" fill="#3a3f44" stroke="#2b2f33" stroke-width="0.6"/>
-      <rect x="24" y="7.5" width="2" height="5.5" fill="#2b2f33"/>
-      <rect x="7" y="20.4" width="16" height="2.2" rx="1" fill="#2b2f33"/>
-      <path d="M4 12.5 Q2 12.5 2 14.5 L2 27 Q2 29 4.5 29 L7.5 27.5 L7.5 14 Q7.5 12.5 5.5 12.5 Z" fill="#e0a020"/>
-    </g>
-  </svg>`,
-  brush: `<svg viewBox="0 0 48 28" xmlns="http://www.w3.org/2000/svg">
-    <g stroke="#6f1d18" stroke-width="1.1" stroke-linejoin="round" transform="translate(48,0) scale(-1,1)">
-      <rect x="4" y="18.5" width="40" height="3" rx="1" fill="#2b2f33"/>
-      <rect x="3.5" y="11" width="22" height="9" rx="1.5" fill="#e0473b"/>
-      <rect x="6" y="7.5" width="13" height="6" rx="1.5" fill="#cdd2d6"/>
-      <circle cx="22" cy="12" r="2.6" fill="#3a3f44"/>
-      <circle cx="22" cy="12" r="1" fill="#9aa0a6" stroke="none"/>
-      <path d="M25.5 8.5 H35 L38.5 13 V20 H25.5 Z" fill="#e0473b"/>
-      <rect x="38.5" y="14.5" width="5" height="5.5" fill="#cf3b30"/>
-      <rect x="43" y="13.5" width="1.8" height="7.5" rx="0.6" fill="#9aa0a6"/>
-      <path d="M27 10 H34 L36.4 13 H27 Z" fill="#bfe3f5" stroke="#1f6f9e" stroke-width="0.6"/>
-      <g stroke="#000" stroke-width="0.5">
-        <circle cx="13" cy="21" r="4.2" fill="#1f2226"/>
-        <circle cx="13" cy="21" r="1.7" fill="#6b7178"/>
-        <circle cx="35" cy="21" r="4.2" fill="#1f2226"/>
-        <circle cx="35" cy="21" r="1.7" fill="#6b7178"/>
-      </g>
-    </g>
-  </svg>`,
+  </g></svg>`,
+  structure: `<svg viewBox="0 0 34 32" xmlns="http://www.w3.org/2000/svg"><g ${_OUT}>${_bldg('#cdb78f', '#9c4f3a')}</g></svg>`,
+  crew: `<svg viewBox="0 0 26 32" xmlns="http://www.w3.org/2000/svg"><g ${_OUT}>
+    <rect x="8.6" y="20" width="3.4" height="9" rx="1.2" fill="#2f5d2a"/>
+    <rect x="13" y="20" width="3.4" height="9" rx="1.2" fill="#2f5d2a"/>
+    <path d="M7.5 12 H17.5 L16.6 21 H8.4 Z" fill="#e6c037"/>
+    <rect x="5.2" y="12.4" width="3" height="8.2" rx="1.4" fill="#e6c037"/>
+    <rect x="17.3" y="12.4" width="3" height="8.2" rx="1.4" fill="#e6c037"/>
+    <circle cx="12.5" cy="8" r="3.5" fill="#e3b48c"/>
+    <path d="M8.2 7.6 Q12.5 3 16.8 7.6 Z" fill="#f2b62e"/>
+    <rect x="8.2" y="7.3" width="8.6" height="1.6" rx="0.6" fill="#d99e20"/>
+    <rect x="20" y="8.5" width="1.5" height="13" rx="0.6" fill="#7a5a2a"/>
+    <rect x="18.8" y="7.6" width="4" height="2.2" rx="0.5" fill="#9aa0a6"/>
+  </g></svg>`,
+  command: `<svg viewBox="0 0 30 32" xmlns="http://www.w3.org/2000/svg"><g ${_OUT}>
+    <rect x="6" y="3" width="2.4" height="26" rx="1.1" fill="#3a3f44"/>
+    <path d="M8.4 4 H26 L21.5 9.2 L26 14.4 H8.4 Z" fill="#27314a"/>
+    <path d="M16.4 5.7 l1.25 2.55 2.8 .35 -2.05 1.95 .5 2.8 -2.5 -1.35 -2.5 1.35 .5 -2.8 -2.05 -1.95 2.8 -.35 z" fill="#eef1f3" stroke="none"/>
+    <circle cx="7.2" cy="29.4" r="1.7" fill="#3a3f44"/>
+  </g></svg>`,
+  staging: `<svg viewBox="0 0 30 32" xmlns="http://www.w3.org/2000/svg"><g ${_OUT}>
+    <rect x="6" y="3" width="2.4" height="26" rx="1.1" fill="#3a3f44"/>
+    <path d="M8.4 4 H26 L21.5 9.2 L26 14.4 H8.4 Z" fill="#2e8b57"/>
+    <text x="16.2" y="11.7" font-size="8.6" font-weight="800" fill="#eef1f3" text-anchor="middle" stroke="none" font-family="Arial, sans-serif">S</text>
+    <circle cx="7.2" cy="29.4" r="1.7" fill="#3a3f44"/>
+  </g></svg>`,
+  lz: `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><g ${_OUT}>
+    <rect x="3" y="3" width="26" height="26" rx="5" fill="#2b3a5c"/>
+    <path d="M11 9 V23 M21 9 V23 M11 16 H21" stroke="#eef1f3" stroke-width="3" stroke-linecap="round" fill="none"/>
+  </g></svg>`,
+  victim: `<svg viewBox="0 0 26 32" xmlns="http://www.w3.org/2000/svg"><g ${_OUT}>
+    <rect x="8.6" y="20" width="3.4" height="9" rx="1.2" fill="#3a4756"/>
+    <rect x="13" y="20" width="3.4" height="9" rx="1.2" fill="#3a4756"/>
+    <path d="M7.8 12 H17.2 L16.6 21 H8.4 Z" fill="#5b8bbf"/>
+    <rect x="5.4" y="9" width="3" height="8.4" rx="1.4" fill="#5b8bbf" transform="rotate(-22 6.9 13)"/>
+    <rect x="17.2" y="12.4" width="3" height="8.2" rx="1.4" fill="#5b8bbf"/>
+    <circle cx="12.5" cy="8" r="3.6" fill="#e3b48c"/>
+    <path d="M9 6.6 Q12.5 3.6 16 6.6 Q15.6 8 12.5 8 Q9.4 8 9 6.6 Z" fill="#6b4a2a"/>
+  </g></svg>`,
+  patient: `<svg viewBox="0 0 26 32" xmlns="http://www.w3.org/2000/svg"><g ${_OUT}>
+    <rect x="8.6" y="20" width="3.4" height="9" rx="1.2" fill="#46525f"/>
+    <rect x="13" y="20" width="3.4" height="9" rx="1.2" fill="#46525f"/>
+    <path d="M7.8 12 H17.2 L16.6 21 H8.4 Z" fill="#eef1f3"/>
+    <rect x="5.4" y="12.4" width="3" height="8.2" rx="1.4" fill="#eef1f3"/>
+    <rect x="17.2" y="12.4" width="3" height="8.2" rx="1.4" fill="#eef1f3"/>
+    <g fill="#e0473b" stroke="none"><rect x="10.6" y="15" width="4.2" height="1.5"/><rect x="11.95" y="13.65" width="1.5" height="4.2"/></g>
+    <circle cx="12.5" cy="8" r="3.6" fill="#e3b48c"/>
+    <path d="M8.8 6.7 Q12.5 3.4 16.2 6.7 L16.2 8.2 L8.8 8.2 Z" fill="#eef1f3"/>
+    <line x1="8.8" y1="8.2" x2="16.2" y2="8.2" stroke="#cfd4d8" stroke-width="0.8"/>
+  </g></svg>`,
+  hazard: `<svg viewBox="0 0 32 30" xmlns="http://www.w3.org/2000/svg"><g stroke="#23282d" stroke-width="1.4" stroke-linejoin="round">
+    <path d="M16 3 L30 27 H2 Z" fill="#f2b62e"/>
+    <rect x="14.6" y="11" width="2.8" height="8.5" rx="1" fill="#23282d" stroke="none"/>
+    <circle cx="16" cy="23" r="1.7" fill="#23282d" stroke="none"/>
+  </g></svg>`,
 };
 
+/* structure-fire icon — building with stage-appropriate flames/smoke/steam */
+function sfireSvg(stage) {
+  const wall = stage === 3 ? '#5a5048' : '#cdb78f';
+  const roof = stage === 3 ? '#2c2722' : '#9c4f3a';
+  let ov = '';
+  if (stage === 0) ov = _smoke(16, 4, 3, '#9aa1a8') + _smoke(21, 3, 2.4, '#b3b9bf');
+  else if (stage === 1) ov = _smoke(20, 4, 2.6, '#7b828a') + _flame(11, 21, 1);
+  else if (stage === 2) ov = _smoke(14, 3.5, 3.2, '#5f666e') + _smoke(21, 3, 2.6, '#6f757d') +
+    _flame(9, 22, 1.1) + _flame(15, 23, 1.5) + _flame(21, 22, 1.2) + _flame(17, 15, 1.4);
+  else if (stage === 3) ov = _smoke(17, 5, 2, '#9aa1a8');
+  else if (stage === 4) ov = _smoke(15, 5, 2.6, '#dfe6ea') + _smoke(21, 4.6, 2.2, '#eef2f4');
+  return `<svg viewBox="0 0 34 32" xmlns="http://www.w3.org/2000/svg"><g ${_OUT}>${_bldg(wall, roof)}</g><g stroke="none">${ov}</g></svg>`;
+}
+
 const UNIT_TYPES = {
-  engine:    { emoji: '🚒', label: 'Engine',    prefix: 'E',   sup: { r: 20, p: 0.50 }, cats: ['wild', 'struct', 'ems'] },
-  ladder:    { emoji: '🪜', label: 'Ladder',    prefix: 'L',   sup: { r: 25, p: 0.55 }, cats: ['struct'] },
-  brush:     { svg: SVG_ICONS.brush, label: 'Brush',  prefix: 'BR',  sup: { r: 15, p: 0.45 }, cats: ['wild'] },
-  tender:    { svg: SVG_ICONS.tender, label: 'Tender',  prefix: 'T',   sup: { r: 12, p: 0.30 }, cats: ['wild', 'struct'] },
-  dozer:     { svg: SVG_ICONS.dozer, label: 'Dozer',  prefix: 'DZ',  line: true,           cats: ['wild'] },
-  crew:      { emoji: '👷', label: 'Crew',      prefix: 'C',   sup: { r: 10, p: 0.35 }, cats: ['wild', 'struct'] },
-  helo:      { emoji: '🚁', label: 'Helo',      prefix: 'H',   sup: { r: 28, p: 0.65 }, cats: ['wild', 'ems'] },
-  tanker:    { emoji: '✈️', label: 'Tanker',    prefix: 'AT',  drop: true,              cats: ['wild'] },
-  medic:     { emoji: '🚑', label: 'Medic',     prefix: 'M',                            cats: ['struct', 'ems'] },
-  police:    { emoji: '🚓', label: 'Police',    prefix: 'PD',                           cats: ['wild', 'struct', 'ems'] },
-  command:   { emoji: '⛺', label: 'ICP',       prefix: 'IC',                           cats: ['wild', 'struct', 'ems'] },
-  sfire:     { emoji: '🏠🔥', label: 'Str. fire', prefix: 'SF', sfire: true,            cats: ['struct'] },
-  hydrant:   { svg: SVG_ICONS.hydrant,  label: 'Hydrant',   prefix: 'HYD',              cats: ['struct'] },
-  droptank:  { svg: SVG_ICONS.droptank, label: 'Drop tank', prefix: 'DT',               cats: ['struct'] },
-  water:     { emoji: '💧', label: 'Water src', prefix: 'W',                            cats: ['wild', 'struct'] },
-  structure: { emoji: '🏠', label: 'Exposure',  prefix: 'S',                            cats: ['wild', 'struct'] },
-  victim:    { emoji: '🧍', label: 'Victim',    prefix: 'V',                            cats: ['wild', 'ems'] },
-  patient:   { emoji: '🤕', label: 'Patient',   prefix: 'PT',                           cats: ['ems'] },
-  staging:   { emoji: '🚩', label: 'Staging',   prefix: 'STG',                          cats: ['struct', 'ems'] },
-  lz:        { badge: 'LZ', label: 'LZ',        prefix: 'LZ',                           cats: ['ems'] },
-  hazard:    { emoji: '⚠️', label: 'Hazard',    prefix: 'HZ',                           cats: ['wild', 'struct', 'ems'] },
+  engine:    { svg: SVG_ICONS.engine,   label: 'Engine',    prefix: 'E',   sup: { r: 20, p: 0.50 }, cats: ['wild', 'struct', 'ems'] },
+  ladder:    { svg: SVG_ICONS.ladder,   label: 'Ladder',    prefix: 'L',   sup: { r: 25, p: 0.55 }, cats: ['struct'] },
+  brush:     { svg: SVG_ICONS.brush,    label: 'Brush',     prefix: 'BR',  sup: { r: 15, p: 0.45 }, cats: ['wild'] },
+  tender:    { svg: SVG_ICONS.tender,   label: 'Tender',    prefix: 'T',   sup: { r: 12, p: 0.30 }, cats: ['wild', 'struct'] },
+  dozer:     { svg: SVG_ICONS.dozer,    label: 'Dozer',     prefix: 'DZ',  line: true,              cats: ['wild'] },
+  crew:      { svg: SVG_ICONS.crew,     label: 'Crew',      prefix: 'C',   sup: { r: 10, p: 0.35 }, cats: ['wild', 'struct'] },
+  helo:      { svg: SVG_ICONS.helo,     label: 'Helo',      prefix: 'H',   sup: { r: 28, p: 0.65 }, cats: ['wild', 'ems'] },
+  tanker:    { svg: SVG_ICONS.tanker,   label: 'Tanker',    prefix: 'AT',  drop: true,              cats: ['wild'] },
+  medic:     { svg: SVG_ICONS.medic,    label: 'Medic',     prefix: 'M',                            cats: ['struct', 'ems'] },
+  police:    { svg: SVG_ICONS.police,   label: 'Police',    prefix: 'PD',                           cats: ['wild', 'struct', 'ems'] },
+  command:   { svg: SVG_ICONS.command,  label: 'ICP',       prefix: 'IC',                           cats: ['wild', 'struct', 'ems'] },
+  sfire:     { sfire: true,             label: 'Str. fire', prefix: 'SF',                            cats: ['struct'] },
+  hydrant:   { svg: SVG_ICONS.hydrant,  label: 'Hydrant',   prefix: 'HYD',                          cats: ['struct'] },
+  droptank:  { svg: SVG_ICONS.droptank, label: 'Drop tank', prefix: 'DT',                           cats: ['struct'] },
+  water:     { svg: SVG_ICONS.water,    label: 'Water src', prefix: 'W',                            cats: ['wild', 'struct'] },
+  structure: { svg: SVG_ICONS.structure, label: 'Exposure', prefix: 'S',                            cats: ['wild', 'struct'] },
+  victim:    { svg: SVG_ICONS.victim,   label: 'Victim',    prefix: 'V',                            cats: ['wild', 'ems'] },
+  patient:   { svg: SVG_ICONS.patient,  label: 'Patient',   prefix: 'PT',                           cats: ['ems'] },
+  staging:   { svg: SVG_ICONS.staging,  label: 'Staging',   prefix: 'STG',                          cats: ['struct', 'ems'] },
+  lz:        { svg: SVG_ICONS.lz,       label: 'LZ',        prefix: 'LZ',                           cats: ['ems'] },
+  hazard:    { svg: SVG_ICONS.hazard,   label: 'Hazard',    prefix: 'HZ',                           cats: ['wild', 'struct', 'ems'] },
 };
 const PAL_CATS = [
   { id: 'wild', label: 'Wildland' },
@@ -772,16 +902,14 @@ map.on('click', (e) => {
 function unitIcon(u) {
   const def = UNIT_TYPES[u.type];
   let face, tag = u.name;
-  if (def.badge) {
-    face = `<div class="lz-badge">${def.badge}</div>`;
+  if (def.sfire) {
+    const stage = u.sf ? u.sf.stage : 2;
+    face = `<div class="unit-svg">${sfireSvg(stage)}</div>`;
+    tag = `${u.name} · ${SF_STAGES[stage].n}`;
   } else if (def.svg) {
     face = `<div class="unit-svg">${def.svg}</div>`;
-  } else if (def.sfire) {
-    const st = SF_STAGES[u.sf.stage];
-    face = `<div class="unit-emoji">${st.i}<span class="sf-badge">${st.b}</span></div>`;
-    tag = `${u.name} · ${st.n}`;
   } else {
-    face = `<div class="unit-emoji">${def.emoji}</div>`;
+    face = `<div class="unit-emoji">${def.emoji || ''}</div>`;
   }
   if (u.notes) tag += ' 📝';
   return L.divIcon({
@@ -1163,7 +1291,7 @@ function buildPalette() {
     b.className = 'tool';
     b.dataset.tool = 'unit:' + t;
     b.title = 'Place ' + def.label;
-    const face = def.badge ? `<span class="lz-mini">${def.badge}</span>`
+    const face = def.sfire ? `<span class="pal-svg">${sfireSvg(2)}</span>`
       : def.svg ? `<span class="pal-svg">${def.svg}</span>`
       : def.emoji;
     b.innerHTML = `${face}<span>${def.label}</span>`;
