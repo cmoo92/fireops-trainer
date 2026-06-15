@@ -141,6 +141,7 @@ html, body {
   touch-action: manipulation; white-space: nowrap;
 }
 .tool span { font-size: 11px; color: var(--fg-dim); font-weight: 600; }
+.tool-ico { height: 24px; width: auto; display: block; }
 .tool.active { background: var(--accent); border-color: var(--accent2); }
 .tool.active span { color: #fff; }
 .tool:active { transform: scale(.96); }

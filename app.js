@@ -1495,7 +1495,7 @@ const TOUR_STEPS = [
   { sel: '[data-tool="unit:engine"]', title: '6 · Assign resources',
     text: 'Tap a unit type, then tap the map to place it. Drag to move; tap one to rename it, add notes, set it Working, or remove it. The tabs switch between Wildland, Structure and EMS kits — including 🏠🔥 structure fires, 🚰 hydrants, 🛢️ drop tanks, 🤕 patients and LZs.' },
   { sel: '[data-tool="line"]', title: '7 · Go defensive',
-    text: 'Fire line paints a fuel break, the 🚜 dozer cuts line as you drag it, the ✈️ tanker drops retardant — and the 🪢 Hose tool lays hose: tap points along the route (pan freely between taps), Finish, then tap the lay for length & friction loss.' },
+    text: 'Fire line paints a fuel break, the 🚜 dozer cuts line as you drag it, the ✈️ tanker drops retardant — and the Hose tool lays hose: tap points along the route (pan freely between taps), Finish, then tap the lay for length & friction loss.' },
   { sel: '#menuBtn', title: '8 · Scenarios & more',
     text: 'Save and share scenarios, paint fuels, see the legend — or run this tour again any time.',
     cta: 'Finish' },
