@@ -66,7 +66,7 @@ const SVG_ICONS = {
     </g>
   </svg>`,
   tender: `<svg viewBox="0 0 48 28" xmlns="http://www.w3.org/2000/svg">
-    <g stroke="#2b3138" stroke-width="1.1" stroke-linejoin="round">
+    <g stroke="#2b3138" stroke-width="1.1" stroke-linejoin="round" transform="translate(48,0) scale(-1,1)">
       <rect x="4" y="20" width="40" height="3" rx="1" fill="#2b3138"/>
       <rect x="2.5" y="6.5" width="28" height="14" rx="7" fill="#d2d7db"/>
       <ellipse cx="3.6" cy="13.5" rx="2.5" ry="7" fill="#bcc2c7"/>
@@ -100,7 +100,7 @@ const SVG_ICONS = {
     </g>
   </svg>`,
   brush: `<svg viewBox="0 0 48 28" xmlns="http://www.w3.org/2000/svg">
-    <g stroke="#6f1d18" stroke-width="1.1" stroke-linejoin="round">
+    <g stroke="#6f1d18" stroke-width="1.1" stroke-linejoin="round" transform="translate(48,0) scale(-1,1)">
       <rect x="4" y="18.5" width="40" height="3" rx="1" fill="#2b2f33"/>
       <rect x="3.5" y="11" width="22" height="9" rx="1.5" fill="#e0473b"/>
       <rect x="6" y="7.5" width="13" height="6" rx="1.5" fill="#cdd2d6"/>
